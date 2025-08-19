@@ -188,6 +188,18 @@ export const systemApi = {
     const response = await api.post('/system/email/test', data);
     return response.data;
   },
+
+  // 测试LDAP配置
+  testLDAPConfig: async (): Promise<ApiResponse> => {
+    const response = await api.post('/system/ldap/test', {});
+    return response.data;
+  },
+
+  // 手动同步LDAP用户
+  syncLDAPUsers: async (): Promise<ApiResponse<{created: number; updated: number;}>> => {
+    const response = await api.post('/system/ldap/sync', {});
+    return response.data;
+  },
 };
 
 // API 函数
@@ -658,6 +670,7 @@ export interface User {
   last_login_at: string;
   role_id: number;
   role: Role;
+  source?: string; // 账户来源：local/ldap
   CreatedAt?: string; // 后端字段
   UpdatedAt?: string; // 后端字段
   created_at?: string; // 兼容性字段

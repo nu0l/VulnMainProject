@@ -15,7 +15,8 @@ import {
   TabPane,
   Table,
   Tag,
-  Modal
+  Modal,
+  Select
 } from '@douyinfe/semi-ui';
 import {
   IconSave,
@@ -66,6 +67,12 @@ const CONFIG_GROUPS = {
     icon: <IconUpload />,
     key: 'upload'
   },
+  ldap: {
+    title: 'LDAP 设置',
+    description: '配置LDAP连接与同步策略',
+    icon: <IconUser />,
+    key: 'ldap'
+  },
 };
 
 export default function SettingsPage() {
@@ -80,6 +87,17 @@ export default function SettingsPage() {
   const [weeklyReports, setWeeklyReports] = useState<any[]>([]);
   const [weeklyReportLoading, setWeeklyReportLoading] = useState(false);
   const [generatingReport, setGeneratingReport] = useState(false);
+
+  // LDAP相关状态
+  const [testingLDAP, setTestingLDAP] = useState(false);
+  const [syncingLDAP, setSyncingLDAP] = useState(false);
+  // 立即展开/折叠LDAP配置项的本地状态
+  // 简单/高级模式与目录类型
+  const [ldapMode, setLdapMode] = useState<'simple' | 'advanced'>('simple');
+  const [ldapDirectoryType, setLdapDirectoryType] = useState<'ad' | 'openldap' | ''>('');
+
+  const [ldapEnabled, setLdapEnabled] = useState<boolean | null>(null);
+
   const [weeklyReportPagination, setWeeklyReportPagination] = useState({
     page: 1,
     pageSize: 10,
@@ -102,6 +120,14 @@ export default function SettingsPage() {
         Object.keys(CONFIG_GROUPS).forEach(group => {
           formData[group] = {};
         });
+
+        // 初始化本地 ldapEnabled（仅初始化一次）
+        if (ldapEnabled === null) {
+          const ldapEnabledCfg = response.data.find((c: SystemConfig) => c.key === 'ldap.enabled');
+          if (ldapEnabledCfg) {
+            setLdapEnabled(convertConfigValue(ldapEnabledCfg.value, ldapEnabledCfg.type));
+          }
+        }
 
         response.data.forEach(config => {
           if (formData[config.group]) {
@@ -155,10 +181,10 @@ export default function SettingsPage() {
   const saveConfigs = async (group: string, values: any) => {
     try {
       setSaving(true);
-      
+
       // 获取该组的配置项
       const groupConfigs = configs.filter(config => config.group === group);
-      
+
       // 批量更新配置
       const updatePromises = groupConfigs.map(async (config) => {
         // 使用转换后的字段名获取值
@@ -166,7 +192,7 @@ export default function SettingsPage() {
         const newValue = values[fieldName];
 
         // 特殊处理密码字段：只有在用户输入了新密码时才更新
-        if (config.key === 'email.password') {
+        if (config.key === 'email.password' || config.key === 'ldap.bind_password') {
           if (newValue && newValue.trim() !== '') {
             const updateData: ConfigUpdateRequest = {
               value: newValue.trim(),
@@ -205,13 +231,20 @@ export default function SettingsPage() {
 
       // 重新加载配置
       await loadConfigs();
-      
+
     } catch (error: any) {
       console.error('保存配置失败:', error);
       Toast.error(error?.response?.data?.msg || '保存配置失败');
     } finally {
       setSaving(false);
     }
+
+  };
+
+  // 一键预填目录类型模板（组件级方法）
+  const applyLdapTemplate = (type: 'ad' | 'openldap') => {
+    setLdapDirectoryType(type);
+    // 简化模式下仅展示示例提示；实际保存仍以用户输入为准
   };
 
   // 重置配置
@@ -233,6 +266,41 @@ export default function SettingsPage() {
 
       if (response.code === 200) {
         Toast.success('测试邮件发送成功，请检查邮箱');
+  // 测试LDAP连接
+  const testLDAP = async () => {
+    try {
+      setTestingLDAP(true);
+      const response = await systemApi.testLDAPConfig();
+      if (response.code === 200) {
+        Toast.success('LDAP连接成功');
+      } else {
+        Toast.error(response.msg || 'LDAP连接失败');
+      }
+    } catch (error: any) {
+      Toast.error(error?.response?.data?.msg || 'LDAP连接失败');
+    } finally {
+      setTestingLDAP(false);
+    }
+  };
+
+  // 手动同步LDAP用户
+  const syncLDAP = async () => {
+    try {
+      setSyncingLDAP(true);
+      const response = await systemApi.syncLDAPUsers();
+      if (response.code === 200) {
+        const data = response.data || { created: 0, updated: 0 };
+        Toast.success(`同步完成：新增${data.created}，更新${data.updated}`);
+      } else {
+        Toast.error(response.msg || '同步失败');
+      }
+    } catch (error: any) {
+      Toast.error(error?.response?.data?.msg || '同步失败');
+    } finally {
+      setSyncingLDAP(false);
+    }
+  };
+
       } else {
         Toast.error(response.msg || '测试邮件发送失败');
       }
@@ -241,6 +309,42 @@ export default function SettingsPage() {
       Toast.error(error.response?.data?.msg || '测试邮件发送失败');
     } finally {
       setTestingEmail(false);
+    }
+  };
+
+
+  // 测试LDAP连接（组件级方法）
+  const testLDAP = async () => {
+    try {
+      setTestingLDAP(true);
+      const response = await systemApi.testLDAPConfig();
+      if (response.code === 200) {
+        Toast.success('LDAP连接成功');
+      } else {
+        Toast.error(response.msg || 'LDAP连接失败');
+      }
+    } catch (error: any) {
+      Toast.error(error?.response?.data?.msg || 'LDAP连接失败');
+    } finally {
+      setTestingLDAP(false);
+    }
+  };
+
+  // 手动同步LDAP用户（组件级方法）
+  const syncLDAP = async () => {
+    try {
+      setSyncingLDAP(true);
+      const response = await systemApi.syncLDAPUsers();
+      if (response.code === 200) {
+        const data = response.data || { created: 0, updated: 0 };
+        Toast.success(`同步完成：新增${data.created}，更新${data.updated}`);
+      } else {
+        Toast.error(response.msg || '同步失败');
+      }
+    } catch (error: any) {
+      Toast.error(error?.response?.data?.msg || '同步失败');
+    } finally {
+      setSyncingLDAP(false);
     }
   };
 
@@ -255,12 +359,13 @@ export default function SettingsPage() {
     };
 
     // 特殊处理密码字段
-    if (config.key === 'email.password') {
+    if (config.key === 'email.password' || config.key === 'ldap.bind_password') {
+      const placeholder = config.key === 'email.password' ? '请输入邮箱授权码（留空表示不修改）' : '请输入LDAP绑定密码（留空表示不修改）';
       return (
         <Form.Input
           {...fieldProps}
           type="password"
-          placeholder="请输入邮箱授权码（留空表示不修改）"
+          placeholder={placeholder}
           initValue="" // 密码字段始终为空，不显示现有值
           suffix={
             <Text type="tertiary" size="small">
@@ -277,9 +382,14 @@ export default function SettingsPage() {
           <Form.Switch
             {...fieldProps}
             initValue={convertConfigValue(config.value, config.type)}
+            onChange={(val) => {
+              if (config.key === 'ldap.enabled') {
+                setLdapEnabled(!!val);
+              }
+            }}
           />
         );
-      
+
       case 'int':
         return (
           <Form.InputNumber
@@ -289,7 +399,7 @@ export default function SettingsPage() {
             style={{ width: '200px' }}
           />
         );
-      
+
       case 'text':
         return (
           <Form.TextArea
@@ -299,7 +409,7 @@ export default function SettingsPage() {
             autosize
           />
         );
-      
+
       default:
         return (
           <Form.Input
@@ -325,7 +435,98 @@ export default function SettingsPage() {
         key={`form-${group}`}
         style={{ maxWidth: '800px' }}
       >
-        {groupConfigs.map(config => renderConfigField(config))}
+        {(() => {
+          if (group === 'ldap') {
+            const enabledCfg = groupConfigs.find(c => c.key === 'ldap.enabled');
+            const enabled = (ldapEnabled !== null) ? ldapEnabled : (enabledCfg ? convertConfigValue(enabledCfg.value, enabledCfg.type) : false);
+            // 简单模式仅显示：开关 + url + base_dn + bind_dn + bind_password
+            const simpleKeys = new Set(['ldap.enabled','ldap.url','ldap.base_dn','ldap.bind_dn','ldap.bind_password']);
+            let visible = groupConfigs;
+            if (!enabled) {
+              visible = groupConfigs.filter(c => c.key === 'ldap.enabled');
+            } else if (ldapMode === 'simple') {
+              visible = groupConfigs.filter(c => simpleKeys.has(c.key));
+            }
+            return (
+              <>
+                {/* 顶部先放两个关键开关，然后是模式/目录类型，再渲染其余 */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {/* 关键开关：启用 + 调试 */}
+                  <div>
+                    {groupConfigs.filter(c => c.key === 'ldap.enabled').map(config => renderConfigField(config))}
+                  </div>
+                  {enabled && (
+                    <div>
+                      {groupConfigs.filter(c => c.key === 'ldap.debug_logging').map(config => renderConfigField(config))}
+                    </div>
+                  )}
+                  {/* 模式/目录类型控制条 */}
+                  <div>
+                    <Space>
+                      <Select
+                        value={ldapMode}
+                        onChange={(v) => setLdapMode(v as 'simple' | 'advanced')}
+                        style={{ width: 140 }}
+                        optionList={[{ value: 'simple', label: '简单模式' }, { value: 'advanced', label: '高级模式' }]}
+                      />
+                      <Select
+                        placeholder="目录类型(可选)"
+                        value={ldapDirectoryType}
+                        onChange={(v) => applyLdapTemplate(v as 'ad' | 'openldap')}
+                        style={{ width: 180 }}
+                        optionList={[{ value: 'ad', label: 'Active Directory' }, { value: 'openldap', label: 'OpenLDAP' }]}
+                      />
+                    </Space>
+                  </div>
+                </div>
+
+                {/* 渲染其余字段：移除已渲染的两个开关 */}
+                {(() => {
+                  const skip = new Set(['ldap.enabled','ldap.debug_logging']);
+                  const rest = visible.filter(c => !skip.has(c.key));
+                  return rest.map(config => renderConfigField(config));
+                })()}
+                {/* 简单模式下给常用字段添加占位提示 */}
+                {ldapMode === 'simple' && enabled && (
+                  <div style={{ marginTop: 8 }}>
+                    <Text type="tertiary" size="small">
+                      {ldapDirectoryType === 'ad' && '示例：url=ldaps://ad.example.com:636，base_dn=DC=example,DC=com，bind_dn=CN=svc_ldap,OU=Service Accounts,DC=example,DC=com'}
+                      {ldapDirectoryType === 'openldap' && '示例：url=ldaps://ldap.example.com:636，base_dn=dc=example,dc=com，bind_dn=cn=admin,dc=example,dc=com'}
+                      {!ldapDirectoryType && '提示：选择目录类型将显示示例。默认值已内置，先填这4项测试连接即可。'}
+                    </Text>
+                  </div>
+                )}
+                {/* 在字段下方放置测试/同步按钮（任意模式，只要已启用）*/}
+                {enabled && (
+                  <div style={{ marginTop: 16 }}>
+                    <Space>
+                      <Button
+                        theme="solid"
+                        type="primary"
+                        icon={testingLDAP ? <IconLoading /> : <IconRefresh />}
+                        loading={testingLDAP}
+                        onClick={testLDAP}
+                      >
+                        测试连接
+                      </Button>
+                      <Button
+                        type="secondary"
+                        theme="solid"
+                        icon={syncingLDAP ? <IconLoading /> : <IconUser />}
+                        loading={syncingLDAP}
+                        onClick={syncLDAP}
+                      >
+                        手动同步用户
+                      </Button>
+                    </Space>
+                  </div>
+                )}
+
+              </>
+            );
+          }
+          return groupConfigs.map(config => renderConfigField(config));
+        })()}
 
         <div style={{ marginTop: '32px', paddingTop: '20px', borderTop: '1px solid var(--semi-color-border)' }}>
           <Space>
@@ -377,6 +578,44 @@ export default function SettingsPage() {
                   • <strong>163邮箱：</strong>smtp.163.com:587，需要开启SMTP服务并使用授权码<br/>
                   • <strong>Gmail：</strong>smtp.gmail.com:587，需要使用应用专用密码<br/>
                   • <strong>企业邮箱：</strong>请联系IT管理员获取SMTP配置信息<br/><br/>
+        {/* LDAP操作 */}
+        {group === 'ldap' && (
+          <>
+            <Divider margin="32px 0" />
+            <div style={{
+              background: 'var(--semi-color-fill-0)',
+              padding: '20px',
+              borderRadius: '8px',
+              border: '1px solid var(--semi-color-border)'
+            }}>
+              <Title heading={5} style={{ marginBottom: 12 }}>LDAP 操作</Title>
+              <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+                可在此测试LDAP连接与手动同步用户清单
+              </Text>
+              <Space>
+                <Button
+                  theme="solid"
+                  type="primary"
+                  icon={testingLDAP ? <IconLoading /> : <IconRefresh />}
+                  loading={testingLDAP}
+                  onClick={testLDAP}
+                >
+                  测试连接
+                </Button>
+                <Button
+                  type="secondary"
+                  theme="solid"
+                  icon={syncingLDAP ? <IconLoading /> : <IconUser />}
+                  loading={syncingLDAP}
+                  onClick={syncLDAP}
+                >
+                  手动同步用户
+                </Button>
+              </Space>
+            </div>
+          </>
+        )}
+
                   <strong>重要提醒：</strong><br/>
                   • 邮箱密码必须使用授权码，不是登录密码！<br/>
                   • 密码字段留空表示不修改现有密码<br/>
@@ -520,12 +759,12 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div style={{ 
-        padding: '24px', 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        minHeight: '400px' 
+      <div style={{
+        padding: '24px',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '400px'
       }}>
         <Spin size="large" />
       </div>

@@ -100,24 +100,26 @@ export default function UsersPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  const loadUsers = async (page = 1) => {
+  const loadUsers = async (page = 1, pageSize?: number) => {
     try {
       setLoading(true);
+      const effectivePageSize = pageSize ?? pagination.pageSize;
       const response = await userApi.getUserList({
         page,
-        page_size: pagination.pageSize,
+        page_size: effectivePageSize,
         keyword: searchKeyword || undefined,
         role_id: filterRole,
         status: filterStatus,
       });
-      
+
       if (response.code === 200 && response.data) {
         setUsers(response.data.users || []);
-        setPagination({
-          ...pagination,
+        setPagination(prev => ({
+          ...prev,
           currentPage: page,
+          pageSize: effectivePageSize,
           total: response.data.total || 0,
-        });
+        }));
       }
     } catch (error) {
       console.error('Error loading users:', error);
@@ -384,6 +386,16 @@ export default function UsersPage() {
       ),
     },
     {
+      title: '来源',
+      dataIndex: 'source',
+      key: 'source',
+      render: (source: string) => (
+        <Tag color={source === 'ldap' ? 'blue' : 'grey'}>
+          {source === 'ldap' ? 'LDAP' : '本地'}
+        </Tag>
+      ),
+    },
+    {
       title: '最后登录',
       dataIndex: 'last_login_at',
       key: 'last_login_at',
@@ -525,12 +537,12 @@ export default function UsersPage() {
               currentPage: pagination.currentPage,
               pageSize: pagination.pageSize,
               total: pagination.total,
-            showSizeChanger: true,
-            showQuickJumper: true,
+              showSizeChanger: true,
+              showQuickJumper: true,
               onChange: handlePageChange,
               onPageSizeChange: (pageSize) => {
-                setPagination({ ...pagination, pageSize, currentPage: 1 });
-                loadUsers(1);
+                setPagination(prev => ({ ...prev, pageSize, currentPage: 1 }));
+                loadUsers(1, pageSize);
               },
           }}
             rowKey={(record) => record.ID || record.id}

@@ -8,6 +8,8 @@ import (
 	Init "vulnmain/Init" // 导入初始化包，获取数据库连接
 	"vulnmain/models"    // 导入模型包，使用用户和日志模型
 	"vulnmain/utils"     // 导入工具包，使用JWT相关功能
+	"fmt"
+
 )
 
 // AuthService结构体定义认证服务
@@ -42,7 +44,25 @@ func (s *AuthService) LocalLogin(req *LoginRequest) (*LoginResponse, error) {
 	// 根据用户名或邮箱查找用户，同时预加载角色和权限信息
 	var user models.User
 	if err := db.Preload("Role.Permissions").Where("username = ? OR email = ?", req.Username, req.Username).First(&user).Error; err != nil {
-		// 用户不存在，返回通用错误信息（安全考虑，不透露具体错误）
+		// 未找到用户：若启用LDAP，则尝试直接进行LDAP认证并按需创建占位用户
+		ldapSvc := &LDAPService{}
+		cfg, _ := ldapSvc.loadConfig()
+		if cfg != nil && cfg.Enabled {
+			ok, err2 := ldapSvc.Authenticate(req.Username, req.Password)
+			if !ok || err2 != nil {
+				return nil, errors.New("用户名或密码错误")
+			}
+			// 确保有用户记录（只需用户名 + 默认邮箱），默认角色normal_user
+			var normalRole models.Role
+			db.Where("code = ?", "normal_user").First(&normalRole)
+			placeholder := models.User{Username: req.Username, Email: fmt.Sprintf("%s@ldap.local", req.Username), Status: 1, RoleID: normalRole.ID, Source: "ldap"}
+			// 设置随机密码以满足非空约束
+			_ = placeholder.SetPassword("ldap_placeholder")
+			db.Where(models.User{Username: req.Username}).Attrs(placeholder).FirstOrCreate(&user)
+			// 记录并继续签发token
+			goto ISSUE_TOKEN
+		}
+		// 否则返回本地错误
 		return nil, errors.New("用户名或密码错误")
 	}
 
@@ -51,13 +71,30 @@ func (s *AuthService) LocalLogin(req *LoginRequest) (*LoginResponse, error) {
 		return nil, errors.New("用户已被禁用")
 	}
 
-	// 验证用户输入的密码是否正确
+	// 判断来源
+	if user.Source == "ldap" {
+		ldapSvc := &LDAPService{}
+		ok, err := ldapSvc.Authenticate(user.Username, req.Password)
+		if !ok || err != nil {
+			// 记录登录失败日志
+			s.LogLogin(&user, "failed", "LDAP密码错误")
+			return nil, errors.New("用户名或密码错误")
+		}
+		// LDAP 验证通过
+		s.LogLogin(&user, "success", "LDAP登录成功")
+		goto ISSUE_TOKEN
+	}
+
+	// 本地账户：验证密码
 	if !user.CheckPassword(req.Password) {
 		// 记录登录失败日志
 		s.LogLogin(&user, "failed", "密码错误")
 		return nil, errors.New("用户名或密码错误")
 	}
 
+	s.LogLogin(&user, "success", "本地登录成功")
+
+ISSUE_TOKEN:
 	// 更新用户最后登录时间
 	now := time.Now().Truncate(time.Second)
 	user.LastLoginAt = &now
@@ -68,9 +105,6 @@ func (s *AuthService) LocalLogin(req *LoginRequest) (*LoginResponse, error) {
 	if err != nil {
 		return nil, errors.New("生成令牌失败")
 	}
-
-	// 记录登录成功日志
-	s.LogLogin(&user, "success", "本地登录成功")
 
 	// 提取用户权限代码列表，用于前端权限控制
 	var permissions []string

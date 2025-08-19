@@ -19,7 +19,8 @@ type User struct {
 	RealName    string     `json:"real_name"`
 	Phone       string     `json:"phone"`
 	Department  string     `json:"department"`
-	Status      int        `gorm:"default:1" json:"status"` // 1:启用 0:禁用
+	Source      string     `gorm:"size:20;default:'local'" json:"source"` // 账户来源：local/ldap
+	Status      int        `gorm:"default:1" json:"status"`              // 1:启用 0:禁用
 	LastLoginAt *time.Time `json:"last_login_at"`
 	RoleID      uint       `gorm:"not null" json:"role_id"`
 	Role        Role       `gorm:"foreignKey:RoleID" json:"role"`

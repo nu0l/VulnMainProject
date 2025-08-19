@@ -73,6 +73,7 @@ func InitDefaultData() error {
 		{Name: "超级管理员", Code: "super_admin", Description: "系统超级管理员，拥有所有权限"},
 		{Name: "安全工程师", Code: "security_engineer", Description: "安全工程师，负责漏洞管理和安全审计"},
 		{Name: "研发工程师", Code: "dev_engineer", Description: "研发工程师，负责漏洞修复"},
+		{Name: "普通用户", Code: "normal_user", Description: "普通用户，最小权限，仅浏览"},
 	}
 
 	// 遍历角色列表，检查每个角色是否已存在
@@ -274,6 +275,23 @@ func InitDefaultData() error {
 		{Key: "password.require_special", Value: "false", Type: "bool", Group: "password", Description: "密码需要包含特殊字符", IsPublic: false},
 		{Key: "upload.max_size", Value: "10", Type: "int", Group: "upload", Description: "文件上传最大大小(MB)", IsPublic: true},
 		{Key: "upload.allowed_types", Value: "jpg,jpeg,png", Type: "string", Group: "upload", Description: "允许上传的文件类型", IsPublic: true},
+
+		// LDAP 配置
+		{Key: "ldap.enabled", Value: "false", Type: "bool", Group: "ldap", Description: "启用LDAP认证与同步", IsPublic: false},
+		{Key: "ldap.url", Value: "ldap://127.0.0.1:389", Type: "string", Group: "ldap", Description: "LDAP服务器地址(含端口)", IsPublic: false},
+		{Key: "ldap.base_dn", Value: "", Type: "string", Group: "ldap", Description: "基础DN(Base DN)", IsPublic: false},
+		{Key: "ldap.bind_dn", Value: "", Type: "string", Group: "ldap", Description: "绑定账号(Bind DN)", IsPublic: false},
+		{Key: "ldap.bind_password", Value: "", Type: "string", Group: "ldap", Description: "绑定密码", IsPublic: false},
+		{Key: "ldap.user_filter", Value: "(|(sAMAccountName={username})(sAMAccountName={username})(mail={username}))", Type: "string", Group: "ldap", Description: "用户查询过滤器(支持{username})", IsPublic: false},
+		{Key: "ldap.sync_filter", Value: "(&(objectClass=person))", Type: "string", Group: "ldap", Description: "同步用户过滤器", IsPublic: false},
+		{Key: "ldap.attr_username", Value: "sAMAccountName", Type: "string", Group: "ldap", Description: "用户名属性", IsPublic: false},
+		{Key: "ldap.attr_real_name", Value: "displayName", Type: "string", Group: "ldap", Description: "姓名属性(为空则尝试cn)", IsPublic: false},
+		{Key: "ldap.attr_email", Value: "mail", Type: "string", Group: "ldap", Description: "邮箱属性", IsPublic: false},
+		{Key: "ldap.attr_phone", Value: "telephoneNumber", Type: "string", Group: "ldap", Description: "手机号属性", IsPublic: false},
+		{Key: "ldap.attr_department", Value: "department", Type: "string", Group: "ldap", Description: "部门属性", IsPublic: false},
+		{Key: "ldap.default_email_domain", Value: "ldap.local", Type: "string", Group: "ldap", Description: "LDAP用户默认邮箱域(缺省时使用)", IsPublic: false},
+		{Key: "ldap.sync_cron", Value: "0 0 * * *", Type: "string", Group: "ldap", Description: "LDAP同步Cron(默认每日0点)", IsPublic: false},
+		{Key: "ldap.debug_logging", Value: "false", Type: "bool", Group: "ldap", Description: "LDAP调试日志(打印同步细节)", IsPublic: false},
 	}
 
 	// 遍历配置列表，检查每个配置是否已存在

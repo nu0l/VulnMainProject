@@ -48,10 +48,35 @@ func (s *SchedulerService) Start() error {
 	}
 
 
+	// 根据配置添加LDAP同步任务
+	// 默认cron表达式保存在 system_configs.ldap.sync_cron
+	ldapSvc := &LDAPService{}
+	cfg, _ := ldapSvc.loadConfig()
+	if cfg != nil && cfg.Enabled {
+		cronExpr := "0 0 * * *"
+		// 从系统配置读取表达式
+		cronConfig := &SystemService{}
+		if c, err := cronConfig.GetSystemConfig("ldap.sync_cron"); err == nil && c.Value != "" {
+			cronExpr = c.Value
+		}
+		_, err = s.cron.AddFunc(cronExpr, func() {
+			log.Println("开始执行LDAP用户同步...")
+			created, updated, err := ldapSvc.SyncUsers()
+			if err != nil {
+				log.Printf("LDAP同步失败: %v", err)
+			} else {
+				log.Printf("LDAP同步完成，新增: %d，更新: %d", created, updated)
+			}
+		})
+		if err != nil {
+			log.Printf("添加LDAP同步任务失败: %v", err)
+		}
+	}
+
 	// 启动定时任务
 	s.cron.Start()
 	log.Println("定时任务服务已启动")
-	
+
 	return nil
 }
 

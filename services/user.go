@@ -78,6 +78,7 @@ func (s *UserService) CreateUser(req *UserCreateRequest) (*models.User, error) {
 		Department: req.Department,
 		Status:     1, // 默认启用
 		RoleID:     req.RoleID,
+		Source:     "local",
 	}
 
 	// 验证密码复杂度
@@ -269,6 +270,11 @@ func (s *UserService) ResetPassword(userID uint, newPassword string) error {
 		return errors.New("用户不存在")
 	}
 
+	// LDAP用户不支持本地重置密码
+	if user.Source == "ldap" {
+		return errors.New("LDAP用户密码由目录服务管理，不能在本系统重置")
+	}
+
 	// 验证密码复杂度
 	if err := utils.ValidatePassword(newPassword); err != nil {
 		return err
@@ -305,6 +311,11 @@ func (s *UserService) ChangePassword(userID uint, oldPassword, newPassword strin
 	var user models.User
 	if err := db.Where("id = ?", userID).First(&user).Error; err != nil {
 		return errors.New("用户不存在")
+	}
+
+	// LDAP用户不支持在本系统修改密码
+	if user.Source == "ldap" {
+		return errors.New("LDAP用户密码由目录服务管理，不能在本系统修改")
 	}
 
 	// 验证原密码

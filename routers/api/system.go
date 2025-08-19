@@ -71,7 +71,7 @@ func GetSystemConfigs(c *gin.Context) {
 
 	// 对敏感信息进行脱敏处理
 	for i := range configs {
-		if configs[i].Key == "email.password" && configs[i].Value != "" {
+		if (configs[i].Key == "email.password" || configs[i].Key == "ldap.bind_password") && configs[i].Value != "" {
 			configs[i].Value = "********" // 用星号替换密码
 		}
 	}
@@ -97,7 +97,7 @@ func GetSystemConfig(c *gin.Context) {
 	}
 
 	// 对敏感信息进行脱敏处理
-	if config.Key == "email.password" && config.Value != "" {
+	if (config.Key == "email.password" || config.Key == "ldap.bind_password") && config.Value != "" {
 		config.Value = "********" // 用星号替换密码
 	}
 
@@ -436,4 +436,37 @@ func TestEmailConfig(c *gin.Context) {
 		"code": 200,
 		"msg":  "测试邮件发送成功",
 	})
+}
+
+
+// TestLDAPConfig 测试LDAP配置连接
+func TestLDAPConfig(c *gin.Context) {
+	// 仅超级管理员可操作
+	roleCode := c.GetString("role_code")
+	if roleCode != "super_admin" {
+		c.JSON(http.StatusForbidden, gin.H{"code": 403, "msg": "权限不足"})
+		return
+	}
+	ldapSvc := &services.LDAPService{}
+	if err := ldapSvc.TestConnection(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "msg": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"code": 200, "msg": "连接成功"})
+}
+
+// SyncLDAPUsers 手动触发LDAP用户同步
+func SyncLDAPUsers(c *gin.Context) {
+	roleCode := c.GetString("role_code")
+	if roleCode != "super_admin" {
+		c.JSON(http.StatusForbidden, gin.H{"code": 403, "msg": "权限不足"})
+		return
+	}
+	ldapSvc := &services.LDAPService{}
+	created, updated, err := ldapSvc.SyncUsers()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "msg": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"code": 200, "msg": "同步完成", "data": gin.H{"created": created, "updated": updated}})
 }

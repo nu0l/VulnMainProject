@@ -266,6 +266,8 @@ func InitRouter(r *gin.Engine) *gin.Engine {
 			systemConfigAPI.POST("/configs", api.CreateSystemConfig)        // 创建系统配置
 			systemConfigAPI.DELETE("/configs/:key", api.DeleteSystemConfig) // 删除系统配置
 			systemConfigAPI.POST("/email/test", api.TestEmailConfig)        // 测试邮件配置
+			systemConfigAPI.POST("/ldap/test", api.TestLDAPConfig)         // 测试LDAP连接
+			systemConfigAPI.POST("/ldap/sync", api.SyncLDAPUsers)          // 手动同步LDAP用户
 		}
 
 		// 系统日志权限组 - 可以查看操作日志
