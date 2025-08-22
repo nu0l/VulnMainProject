@@ -1141,12 +1141,12 @@ export default function ProjectDetailPage() {
       title: '截止时间',
       dataIndex: 'fix_deadline',
       key: 'fix_deadline',
-      render: (deadline: string) => {
+      render: (deadline: string, record: Vulnerability) => {
         if (!deadline) return '-';
 
         const deadlineDate = new Date(deadline);
         const now = new Date();
-        const isOverdue = deadlineDate < now;
+        const isOverdue = deadlineDate < now && record.status !== 'completed';
         const daysDiff = Math.ceil((deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
         return (
@@ -1162,7 +1162,7 @@ export default function ProjectDetailPage() {
                 <Text type="danger" size="small">已逾期 {Math.abs(daysDiff)} 天</Text>
               </div>
             )}
-            {!isOverdue && daysDiff <= 3 && daysDiff > 0 && (
+            {!isOverdue && record.status !== 'completed' && daysDiff <= 3 && daysDiff >= 0 && (
               <div>
                 <Text type="warning" size="small">还有 {daysDiff} 天</Text>
               </div>
@@ -2105,16 +2105,20 @@ export default function ProjectDetailPage() {
                         {(() => {
                           const deadlineDate = new Date(viewingVuln.fix_deadline);
                           const now = new Date();
-                          const isOverdue = deadlineDate < now;
+                          const isOverdue = deadlineDate < now && viewingVuln.status !== 'completed';
                           const daysDiff = Math.ceil((deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
+                          if (viewingVuln.status === 'completed') {
+                            return null;
+                          }
                           if (isOverdue) {
                             return <Text type="danger" size="small">已逾期</Text>;
-                          } else if (daysDiff <= 3) {
+                          } else if (daysDiff <= 3 && daysDiff >= 0) {
                             return <Text type="warning" size="small">即将到期</Text>;
-                          } else {
+                          } else if (daysDiff > 3) {
                             return <Text type="secondary" size="small">{daysDiff}天后</Text>;
                           }
+                          return null;
                         })()}
                       </div>
                     </div>

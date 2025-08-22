@@ -494,3 +494,16 @@ func (s *UserService) UploadVulnImage(userID uint, file *multipart.FileHeader, b
 
 	return imageURL, nil
 }
+
+
+// GetRoles 获取角色列表
+func (s *UserService) GetRoles() ([]models.Role, error) {
+	db := Init.GetDB()
+
+	var roles []models.Role
+	if err := db.Find(&roles).Error; err != nil {
+		return nil, errors.New("获取角色列表失败")
+	}
+
+	return roles, nil
+}

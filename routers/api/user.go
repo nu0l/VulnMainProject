@@ -294,3 +294,22 @@ func GetAllEngineers(c *gin.Context) {
 		"data": engineers,
 	})
 }
+
+
+// GetRoles 获取角色列表
+func GetRoles(c *gin.Context) {
+	roles, err := userService.GetRoles()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code": 500,
+			"msg":  err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+		"msg":  "获取成功",
+		"data": roles,
+	})
+}

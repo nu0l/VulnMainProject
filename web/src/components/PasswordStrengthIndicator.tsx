@@ -76,7 +76,10 @@ const PasswordStrengthIndicator: React.FC<PasswordStrengthIndicatorProps> = ({
       try {
         const result = await validatePassword(password);
         setValidationResult(result);
-        onValidationChange?.(result);
+                        // Defer the callback to the next event loop cycle to avoid state updates during render
+        if (onValidationChange) {
+          setTimeout(() => onValidationChange(result), 0);
+        }
       } catch (error) {
         console.error('密码验证失败:', error);
       }

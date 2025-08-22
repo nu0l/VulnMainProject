@@ -309,6 +309,8 @@ func InitRouter(r *gin.Engine) *gin.Engine {
 		// 数据字典接口 - 所有已认证用户都可以访问
 		authAPI.GET("/dictionaries", api.GetDictionaries) // 获取数据字典
 
+    authAPI.GET("/roles", api.GetRoles)
+
 		// 用户项目相关接口 - 所有已认证用户都可以访问
 		authAPI.GET("/user/projects", api.GetUserProjects) // 获取用户的项目列表
 	}

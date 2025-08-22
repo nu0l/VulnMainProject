@@ -521,12 +521,12 @@ export default function DashboardPage() {
                 title: '截止时间',
                 dataIndex: 'fix_deadline',
                 key: 'fix_deadline',
-                render: (deadline: string) => {
+                render: (deadline: string, record: VulnListItem) => {
                   if (!deadline) return '-';
 
                   const deadlineDate = new Date(deadline);
                   const now = new Date();
-                  const isOverdue = deadlineDate < now;
+                  const isOverdue = deadlineDate < now && record.status !== 'completed';
                   const daysDiff = Math.ceil((deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
                   return (
@@ -542,7 +542,7 @@ export default function DashboardPage() {
                           <Text type="danger" size="small">已逾期 {Math.abs(daysDiff)} 天</Text>
                         </div>
                       )}
-                      {!isOverdue && daysDiff <= 3 && daysDiff > 0 && (
+                      {!isOverdue && record.status !== 'completed' && daysDiff <= 3 && daysDiff >= 0 && (
                         <div>
                           <Text type="warning" size="small">还有 {daysDiff} 天</Text>
                         </div>
@@ -876,12 +876,12 @@ export default function DashboardPage() {
                 title: '截止时间',
                 dataIndex: 'fix_deadline',
                 key: 'fix_deadline',
-                render: (deadline: string) => {
+                render: (deadline: string, record: VulnListItem) => {
                   if (!deadline) return '-';
 
                   const deadlineDate = new Date(deadline);
                   const now = new Date();
-                  const isOverdue = deadlineDate < now;
+                  const isOverdue = deadlineDate < now && record.status !== 'completed';
                   const daysDiff = Math.ceil((deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
                   return (
@@ -897,7 +897,7 @@ export default function DashboardPage() {
                           <Text type="danger" size="small">已逾期 {Math.abs(daysDiff)} 天</Text>
                         </div>
                       )}
-                      {!isOverdue && daysDiff <= 3 && daysDiff > 0 && (
+                      {!isOverdue && record.status !== 'completed' && daysDiff <= 3 && daysDiff >= 0 && (
                         <div>
                           <Text type="warning" size="small">还有 {daysDiff} 天</Text>
                         </div>
@@ -1211,12 +1211,12 @@ export default function DashboardPage() {
                 title: '截止时间',
                 dataIndex: 'fix_deadline',
                 key: 'fix_deadline',
-                render: (deadline: string) => {
+                render: (deadline: string, record: VulnListItem) => {
                   if (!deadline) return '-';
 
                   const deadlineDate = new Date(deadline);
                   const now = new Date();
-                  const isOverdue = deadlineDate < now;
+                  const isOverdue = deadlineDate < now && record.status !== 'completed';
                   const daysDiff = Math.ceil((deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
                   return (
@@ -1232,7 +1232,7 @@ export default function DashboardPage() {
                           <Text type="danger" size="small">已逾期 {Math.abs(daysDiff)} 天</Text>
                         </div>
                       )}
-                      {!isOverdue && daysDiff <= 3 && daysDiff > 0 && (
+                      {!isOverdue && record.status !== 'completed' && daysDiff <= 3 && daysDiff >= 0 && (
                         <div>
                           <Text type="warning" size="small">还有 {daysDiff} 天</Text>
                         </div>
