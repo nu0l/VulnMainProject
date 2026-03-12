@@ -791,6 +791,17 @@ export interface Vulnerability {
   fix_deadline?: string;
   retest_result?: string;
   tags?: string;
+  comments?: VulnComment[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VulnComment {
+  id: number;
+  vuln_id: number;
+  content: string;
+  user_id: number;
+  user: User;
   created_at: string;
   updated_at: string;
 }
@@ -1045,6 +1056,39 @@ export const vulnApi = {
   // 忽略漏洞
   ignoreVuln: async (id: number, reason: string): Promise<ApiResponse> => {
     const response = await api.put(`/vulns/${id}/ignore`, { ignore_reason: reason });
+    return response.data;
+  },
+
+  // 批量导出漏洞
+  exportVulns: async (vulnIds: number[], projectId: number): Promise<Blob> => {
+    const response = await api.post('/vulns/export', {
+      vuln_ids: vulnIds,
+      project_id: projectId,
+    }, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  // 批量导入漏洞
+  importVulns: async (file: File, projectId: number): Promise<ApiResponse<any>> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('project_id', projectId.toString());
+
+    const response = await api.post('/vulns/import', formData, {
+      headers: {
+        'Content-Type': undefined,
+      },
+    });
+    return response.data;
+  },
+
+  // 下载漏洞导入模板
+  downloadImportTemplate: async (): Promise<Blob> => {
+    const response = await api.get('/vulns/import/template', {
+      responseType: 'blob',
+    });
     return response.data;
   },
 };

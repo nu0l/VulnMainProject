@@ -226,11 +226,11 @@ func InitDefaultData() error {
 
 		// 创建默认管理员用户
 		admin := User{
-			Username: "admin",           // 用户名
-			Email:    "admin@vulnmain.com",  // 邮箱地址
-			RealName: "系统管理员",           // 真实姓名
-			Status:   1,                 // 用户状态（1=启用）
-			RoleID:   superAdminRole.ID, // 关联超级管理员角色
+			Username: "admin",              // 用户名
+			Email:    "admin@vulnmain.com", // 邮箱地址
+			RealName: "系统管理员",              // 真实姓名
+			Status:   1,                    // 用户状态（1=启用）
+			RoleID:   superAdminRole.ID,    // 关联超级管理员角色
 		}
 		// 设置默认密码
 		admin.SetPassword("admin123")
@@ -276,6 +276,12 @@ func InitDefaultData() error {
 		{Key: "upload.max_size", Value: "10", Type: "int", Group: "upload", Description: "文件上传最大大小(MB)", IsPublic: true},
 		{Key: "upload.allowed_types", Value: "jpg,jpeg,png", Type: "string", Group: "upload", Description: "允许上传的文件类型", IsPublic: true},
 
+		// Webhook 联动告警配置
+		{Key: "webhook.enabled", Value: "false", Type: "bool", Group: "webhook", Description: "启用Webhook联动告警", IsPublic: false},
+		{Key: "webhook.timeout_seconds", Value: "8", Type: "int", Group: "webhook", Description: "Webhook请求超时(秒)", IsPublic: false},
+		{Key: "webhook.events", Value: "vuln_detected,ticket_timeout,vuln_fix_failed,vuln_status_changed,vuln_deadline_reminder", Type: "string", Group: "webhook", Description: "启用的事件列表，逗号分隔", IsPublic: false},
+		{Key: "webhook.endpoints", Value: "[]", Type: "json", Group: "webhook", Description: "Webhook终端配置(JSON数组，支持dingtalk/feishu/lanxin/custom)", IsPublic: false},
+
 		// LDAP 配置
 		{Key: "ldap.enabled", Value: "false", Type: "bool", Group: "ldap", Description: "启用LDAP认证与同步", IsPublic: false},
 		{Key: "ldap.url", Value: "ldap://127.0.0.1:389", Type: "string", Group: "ldap", Description: "LDAP服务器地址(含端口)", IsPublic: false},
@@ -314,21 +320,21 @@ func InitDefaultData() error {
 
 // WeeklyReport 周报记录模型
 type WeeklyReport struct {
-	ID               uint      `gorm:"primaryKey" json:"id"`
-	WeekStart        string    `json:"week_start"`        // 周开始日期
-	WeekEnd          string    `json:"week_end"`          // 周结束日期
-	FileName         string    `json:"file_name"`         // PDF文件名
-	FilePath         string    `json:"file_path"`         // PDF文件路径
-	FileSize         int64     `json:"file_size"`         // 文件大小（字节）
-	TotalSubmitted   int64     `json:"total_submitted"`   // 本周提交漏洞总数
-	TotalFixed       int64     `json:"total_fixed"`       // 本周修复漏洞总数
-	TotalFixing      int64     `json:"total_fixing"`      // 修复中漏洞数
-	TotalRetesting   int64     `json:"total_retesting"`   // 待复测漏洞数
-	GeneratedBy      uint      `json:"generated_by"`      // 生成者用户ID
-	GeneratedByName  string    `json:"generated_by_name"` // 生成者姓名
-	SentTo           string    `json:"sent_to"`           // 发送邮箱
-	SentAt           *time.Time `json:"sent_at"`          // 发送时间
-	Status           string    `json:"status"`            // 状态：generated, sent, failed
-	CreatedAt        time.Time `json:"created_at"`        // 创建时间
-	UpdatedAt        time.Time `json:"updated_at"`        // 更新时间
+	ID              uint       `gorm:"primaryKey" json:"id"`
+	WeekStart       string     `json:"week_start"`        // 周开始日期
+	WeekEnd         string     `json:"week_end"`          // 周结束日期
+	FileName        string     `json:"file_name"`         // PDF文件名
+	FilePath        string     `json:"file_path"`         // PDF文件路径
+	FileSize        int64      `json:"file_size"`         // 文件大小（字节）
+	TotalSubmitted  int64      `json:"total_submitted"`   // 本周提交漏洞总数
+	TotalFixed      int64      `json:"total_fixed"`       // 本周修复漏洞总数
+	TotalFixing     int64      `json:"total_fixing"`      // 修复中漏洞数
+	TotalRetesting  int64      `json:"total_retesting"`   // 待复测漏洞数
+	GeneratedBy     uint       `json:"generated_by"`      // 生成者用户ID
+	GeneratedByName string     `json:"generated_by_name"` // 生成者姓名
+	SentTo          string     `json:"sent_to"`           // 发送邮箱
+	SentAt          *time.Time `json:"sent_at"`           // 发送时间
+	Status          string     `json:"status"`            // 状态：generated, sent, failed
+	CreatedAt       time.Time  `json:"created_at"`        // 创建时间
+	UpdatedAt       time.Time  `json:"updated_at"`        // 更新时间
 }
