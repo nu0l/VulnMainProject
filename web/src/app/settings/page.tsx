@@ -73,6 +73,12 @@ const CONFIG_GROUPS = {
     icon: <IconUser />,
     key: 'ldap'
   },
+  webhook: {
+    title: 'Webhook 联动',
+    description: '配置钉钉/飞书/蓝信等Webhook告警矩阵',
+    icon: <IconMail />,
+    key: 'webhook'
+  },
 };
 
 export default function SettingsPage() {
