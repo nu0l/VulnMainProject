@@ -82,6 +82,7 @@ export interface ApiResponse<T = any> {
 export interface LoginRequest {
   username: string;
   password: string;
+  second_factor_code?: string;
 }
 
 export interface LoginResponse {
@@ -791,6 +792,17 @@ export interface Vulnerability {
   fix_deadline?: string;
   retest_result?: string;
   tags?: string;
+  comments?: VulnComment[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VulnComment {
+  id: number;
+  vuln_id: number;
+  content: string;
+  user_id: number;
+  user: User;
   created_at: string;
   updated_at: string;
 }
@@ -1047,6 +1059,63 @@ export const vulnApi = {
     const response = await api.put(`/vulns/${id}/ignore`, { ignore_reason: reason });
     return response.data;
   },
+
+  // 批量导出漏洞
+  exportVulns: async (vulnIds: number[], projectId: number): Promise<Blob> => {
+    const response = await api.post('/vulns/export', {
+      vuln_ids: vulnIds,
+      project_id: projectId,
+    }, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  // 批量导入漏洞
+  importVulns: async (file: File, projectId: number): Promise<ApiResponse<any>> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('project_id', projectId.toString());
+
+    const response = await api.post('/vulns/import', formData, {
+      headers: {
+        'Content-Type': undefined,
+      },
+    });
+    return response.data;
+  },
+
+  // 下载漏洞导入模板
+  downloadImportTemplate: async (): Promise<Blob> => {
+    const response = await api.get('/vulns/import/template', {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  // AI修复建议
+  generateAIFixSuggestion: async (id: number): Promise<ApiResponse<{content: string}>> => {
+    const response = await api.post(`/vulns/${id}/ai-fix-suggestion`);
+    return response.data;
+  },
+
+  // 历史修复策略推荐
+  recommendFixStrategies: async (id: number): Promise<ApiResponse<any[]>> => {
+    const response = await api.get(`/vulns/${id}/recommend-fixes`);
+    return response.data;
+  },
+
+  // 导出合规模板报告
+  exportComplianceReport: async (standard: 'mlps2' | 'iso27001' | 'finance', projectId?: number): Promise<Blob> => {
+    const response = await api.get('/vulns/compliance/export', {
+      params: {
+        standard,
+        project_id: projectId,
+      },
+      responseType: 'blob',
+    });
+    return response.data;
+  },
 };
 
 
@@ -1189,3 +1258,29 @@ export interface WeeklyReportRecord {
 }
 
 export default api;
+
+
+export const knowledgeApi = {
+  list: async (params?: { page?: number; page_size?: number; keyword?: string; vuln_type?: string }): Promise<ApiResponse<any>> => {
+    const response = await api.get('/knowledge', { params });
+    return response.data;
+  },
+  create: async (data: any): Promise<ApiResponse<any>> => {
+    const response = await api.post('/knowledge', data);
+    return response.data;
+  },
+  update: async (id: number, data: any): Promise<ApiResponse<any>> => {
+    const response = await api.put(`/knowledge/${id}`, data);
+    return response.data;
+  },
+  remove: async (id: number): Promise<ApiResponse<any>> => {
+    const response = await api.delete(`/knowledge/${id}`);
+    return response.data;
+  },
+  recommend: async (vulnType: string, severity?: string): Promise<ApiResponse<any[]>> => {
+    const response = await api.get('/knowledge/recommend', {
+      params: { vuln_type: vulnType, severity },
+    });
+    return response.data;
+  },
+};

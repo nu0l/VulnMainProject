@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	Init "vulnmain/Init"
 	"vulnmain/models"
 	"vulnmain/services"
-	Init "vulnmain/Init"
 
 	"github.com/gin-gonic/gin"
 )
@@ -63,6 +63,9 @@ func PreviewWeeklyReportPDF(c *gin.Context) {
 
 	// 返回PDF数据
 	c.Data(http.StatusOK, "application/pdf", pdfData)
+	if userID, exists := c.Get("user_id"); exists {
+		(&services.SystemService{}).RecordOperation(userID.(uint), "report", "preview", "weekly_report.pdf", "预览周报PDF", "success", c.ClientIP(), c.GetHeader("User-Agent"))
+	}
 }
 
 // DownloadWeeklyReportPDF 下载周报PDF
@@ -95,6 +98,9 @@ func DownloadWeeklyReportPDF(c *gin.Context) {
 
 	// 返回PDF数据
 	c.Data(http.StatusOK, "application/pdf", pdfData)
+	if userID, exists := c.Get("user_id"); exists {
+		(&services.SystemService{}).RecordOperation(userID.(uint), "report", "export", filename, "导出周报PDF", "success", c.ClientIP(), c.GetHeader("User-Agent"))
+	}
 }
 
 // SendWeeklyReport 手动发送周报
@@ -275,6 +281,9 @@ func PreviewWeeklyReportFile(c *gin.Context) {
 
 	// 返回PDF数据
 	c.Data(http.StatusOK, "application/pdf", fileData)
+	if userID, exists := c.Get("user_id"); exists {
+		(&services.SystemService{}).RecordOperation(userID.(uint), "report", "preview", report.FileName, "预览历史周报", "success", c.ClientIP(), c.GetHeader("User-Agent"))
+	}
 }
 
 // DownloadWeeklyReportFile 下载周报PDF文件
@@ -325,4 +334,7 @@ func DownloadWeeklyReportFile(c *gin.Context) {
 
 	// 返回PDF数据
 	c.Data(http.StatusOK, "application/pdf", fileData)
+	if userID, exists := c.Get("user_id"); exists {
+		(&services.SystemService{}).RecordOperation(userID.(uint), "report", "export", report.FileName, "导出历史周报", "success", c.ClientIP(), c.GetHeader("User-Agent"))
+	}
 }

@@ -91,8 +91,6 @@ type AssetListResponse struct {
 	TotalPages  int            `json:"total_pages"`  // 总页数
 }
 
-
-
 // AssetExportRequest结构体定义批量导出资产的请求参数
 type AssetExportRequest struct {
 	AssetIDs  []uint `json:"asset_ids"`  // 要导出的资产ID列表
@@ -106,10 +104,10 @@ type AssetImportRequest struct {
 
 // AssetImportResult结构体定义批量导入的结果
 type AssetImportResult struct {
-	SuccessCount int      `json:"success_count"` // 成功导入的资产数量
-	FailureCount int      `json:"failure_count"` // 导入失败的资产数量
-	Errors       []string `json:"errors"`        // 错误信息列表
-	Assets       []models.Asset `json:"assets"`  // 成功导入的资产列表
+	SuccessCount int            `json:"success_count"` // 成功导入的资产数量
+	FailureCount int            `json:"failure_count"` // 导入失败的资产数量
+	Errors       []string       `json:"errors"`        // 错误信息列表
+	Assets       []models.Asset `json:"assets"`        // 成功导入的资产列表
 }
 
 // CreateAsset方法创建新的资产记录
@@ -187,6 +185,7 @@ func (s *AssetService) CreateAsset(req *AssetCreateRequest, createdBy uint) (*mo
 
 	// 记录审计日志，追踪资产创建操作
 	s.addAuditLog(asset.ID, "create", "", "", createdBy, "", "")
+	(&SystemService{}).RecordOperation(createdBy, "asset", "create", asset.Name, "创建资产", "success", "", "")
 
 	// 重新查询资产信息，包含关联的项目、资产组、创建者等数据
 	db.Preload("Project").Preload("AssetGroup").Preload("Creator").Where("id = ?", asset.ID).First(&asset)
@@ -331,6 +330,7 @@ func (s *AssetService) DeleteAsset(assetID uint, userID uint, userRole string) e
 
 	// 记录审计日志
 	s.addAuditLog(assetID, "delete", "", "", userID, "", "")
+	(&SystemService{}).RecordOperation(userID, "asset", "delete", asset.Name, "删除资产", "success", "", "")
 
 	// 更新项目统计信息（如果资产属于某个项目）
 	if projectID != 0 {
@@ -577,8 +577,6 @@ func (s *AssetService) addAuditLog(assetID uint, action, before, after string, u
 
 	db.Create(&log)
 }
-
-
 
 // ExportAssetsToExcel 批量导出资产到Excel文件
 func (s *AssetService) ExportAssetsToExcel(assetIDs []uint, projectID uint, userID uint, userRole string) ([]byte, error) {
