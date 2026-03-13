@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	"io"
 	"mime/multipart"
 	"os"
 	"path/filepath"
@@ -493,6 +494,20 @@ func (s *UserService) UploadVulnImage(userID uint, file *multipart.FileHeader, _
 	// 复制文件内容
 	if _, err := dst.ReadFrom(src); err != nil {
 		return "", errors.New("保存文件失败")
+	}
+
+	if target == "logo" || target == "login_background" {
+		publicDir := filepath.Join("web", "public")
+		if err := os.MkdirAll(publicDir, 0755); err == nil {
+			publicPath := filepath.Join(publicDir, fileName)
+			if srcFile, errOpen := os.Open(filePath); errOpen == nil {
+				defer srcFile.Close()
+				if dstFile, errCreate := os.Create(publicPath); errCreate == nil {
+					defer dstFile.Close()
+					_, _ = io.Copy(dstFile, srcFile)
+				}
+			}
+		}
 	}
 
 	// 生成访问URL

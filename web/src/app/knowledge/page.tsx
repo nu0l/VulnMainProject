@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Card, Table, Tag, Typography, Button, Tabs } from '@douyinfe/semi-ui';
+import { Card, Table, Tag, Typography, Button, Tabs, Modal } from '@douyinfe/semi-ui';
 import { vulnApi, VULN_SEVERITIES, knowledgeApi, type Vulnerability } from '@/lib/api';
+import MarkdownViewer from '@/components/MarkdownViewer';
 
 const { Title, Text } = Typography;
 
@@ -21,6 +22,9 @@ export default function KnowledgePage() {
   const [vulnLoading, setVulnLoading] = useState(false);
   const [vulnRows, setVulnRows] = useState<Vulnerability[]>([]);
   const [vulnPagination, setVulnPagination] = useState({ currentPage: 1, pageSize: 20, total: 0 });
+
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewVuln, setPreviewVuln] = useState<Vulnerability | null>(null);
 
   const [alertLoading, setAlertLoading] = useState(false);
   const [alertRows, setAlertRows] = useState<AlertItem[]>([]);
@@ -64,6 +68,19 @@ export default function KnowledgePage() {
     loadAlerts(1, 10);
   }, []);
 
+
+  const handlePreviewVuln = async (id: number) => {
+    try {
+      const res = await vulnApi.getVuln(id);
+      if (res.code === 200 && res.data) {
+        setPreviewVuln(res.data);
+        setPreviewVisible(true);
+      }
+    } catch (error) {
+      // ignore
+    }
+  };
+
   const severityTag = (severity: string) => {
     const item = VULN_SEVERITIES.find((s) => s.value === severity);
     return <Tag color={item?.color || 'grey'}>{item?.label || severity}</Tag>;
@@ -77,6 +94,10 @@ export default function KnowledgePage() {
     {
       title: '提交时间', dataIndex: 'submitted_at', key: 'submitted_at', width: 180,
       render: (v: string) => v ? new Date(v).toLocaleString() : '-'
+    },
+    {
+      title: '操作', key: 'action', width: 120,
+      render: (_: unknown, r: Vulnerability) => <a onClick={() => handlePreviewVuln(r.id)}>预览</a>
     },
   ], []);
 
@@ -144,6 +165,33 @@ export default function KnowledgePage() {
           </Tabs.TabPane>
         </Tabs>
       </Card>
+
+      <Modal
+        title="漏洞预览"
+        visible={previewVisible}
+        onCancel={() => setPreviewVisible(false)}
+        footer={null}
+        width={1000}
+      >
+        {previewVuln && (
+          <div>
+            <Title heading={5}>{previewVuln.title}</Title>
+            <div style={{ marginBottom: 12 }}>
+              <Tag color={VULN_SEVERITIES.find((s) => s.value === previewVuln.severity)?.color || 'grey'}>
+                {VULN_SEVERITIES.find((s) => s.value === previewVuln.severity)?.label || previewVuln.severity}
+              </Tag>
+            </div>
+            <div style={{ marginBottom: 12 }}><Text strong>漏洞详情</Text></div>
+            <MarkdownViewer content={previewVuln.description || ''} />
+            {previewVuln.request_packet && (
+              <>
+                <div style={{ marginTop: 16, marginBottom: 8 }}><Text strong>请求数据包</Text></div>
+                <pre style={{ background: '#0f172a', color: '#e2e8f0', padding: 12, borderRadius: 6, whiteSpace: 'pre-wrap' }}>{previewVuln.request_packet}</pre>
+              </>
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
