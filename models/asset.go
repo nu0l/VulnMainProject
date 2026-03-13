@@ -9,29 +9,33 @@ import (
 // Asset结构体定义资产表的数据模型
 // 资产是漏洞管理系统中的核心实体，代表需要保护的网络资源
 type Asset struct {
-	ID           uint        `gorm:"primary_key" json:"id"`                      // 资产唯一标识符，主键
-	Name         string      `gorm:"not null;size:255" json:"name"`              // 资产名称，不能为空，最大255字符
-	Type         string      `gorm:"size:50" json:"type"`                        // 资产类型：server服务器、network_device网络设备、database数据库、storage_device存储设备、custom自定义类型
-	Domain       string      `gorm:"size:255" json:"domain"`                     // 资产域名，可选，必须加http或https，最大255字符
-	IP           string      `gorm:"not null;size:45" json:"ip"`                 // 资产IP地址，必填，支持IPv4和IPv6格式
-	Port         string      `gorm:"not null;size:100" json:"port"`              // 资产端口信息，必填，支持多端口用逗号分隔
-	OS           string      `gorm:"size:100" json:"os"`                         // 操作系统：CentOS、Windows、Ubuntu、Debian、Red Hat、龙蜥(Anolis)、其他
-	Owner        string      `gorm:"size:100" json:"owner"`                      // 资产负责人名字，最大100字符
-	Environment  string      `gorm:"size:50" json:"environment"`                 // 所属环境：production生产环境、pre_production准生产环境、staging预发环境、testing测试环境、development开发环境、disaster_recovery容灾环境
-	Department   string      `gorm:"size:100" json:"department"`                 // 资产所属部门，最大100字符
-	Importance   string      `gorm:"size:20" json:"importance"`                  // 资产重要性：extremely_high极高、high高、medium中、low低
-	ProjectID    uint        `json:"project_id"`                                 // 关联项目ID，外键
-	Project      Project     `gorm:"foreignkey:ProjectID" json:"project"`        // 关联的项目对象
-	AssetGroupID *uint       `json:"asset_group_id"`                             // 所属资产组ID，外键，可为空
-	AssetGroup   *AssetGroup `gorm:"foreignkey:AssetGroupID" json:"asset_group"` // 关联的资产组对象
-	CreatedBy    uint        `json:"created_by"`                                 // 创建者用户ID，外键
-	Creator      User        `gorm:"foreignkey:CreatedBy" json:"creator"`        // 创建者用户对象
-	Tags         string      `gorm:"size:500" json:"tags"`                       // 资产标签，用逗号分隔，便于分类和搜索
-	Status       string      `gorm:"size:20;default:'active'" json:"status"`     // 资产状态：active活跃、inactive非活跃、maintenance维护中
-	Description  string      `gorm:"type:text" json:"description"`               // 资产详细描述，长文本类型
-	CreatedAt    time.Time   `json:"created_at"`                                 // 创建时间，GORM自动管理
-	UpdatedAt    time.Time   `json:"updated_at"`                                 // 更新时间，GORM自动管理
-	DeletedAt    *time.Time  `sql:"index" json:"deleted_at"`                     // 删除时间，软删除标记
+	ID               uint        `gorm:"primary_key" json:"id"`                      // 资产唯一标识符，主键
+	Name             string      `gorm:"not null;size:255" json:"name"`              // 资产名称，不能为空，最大255字符
+	Type             string      `gorm:"size:50" json:"type"`                        // 资产类型：server服务器、network_device网络设备、database数据库、storage_device存储设备、custom自定义类型
+	Domain           string      `gorm:"size:255" json:"domain"`                     // 资产域名，可选，必须加http或https，最大255字符
+	IP               string      `gorm:"not null;size:45" json:"ip"`                 // 资产IP地址，必填，支持IPv4和IPv6格式
+	Port             string      `gorm:"not null;size:100" json:"port"`              // 资产端口信息，必填，支持多端口用逗号分隔
+	OS               string      `gorm:"size:100" json:"os"`                         // 操作系统：CentOS、Windows、Ubuntu、Debian、Red Hat、龙蜥(Anolis)、其他
+	Owner            string      `gorm:"size:100" json:"owner"`                      // 资产负责人名字，最大100字符
+	ConstructionUnit string      `gorm:"size:200" json:"construction_unit"`          // 建设单位名称
+	DevelopmentUnit  string      `gorm:"size:200" json:"development_unit"`           // 开发单位名称
+	ResponsibleDept  string      `gorm:"size:200" json:"responsible_dept"`           // 负责部门名称
+	Environment      string      `gorm:"size:50" json:"environment"`                 // 所属环境：production生产环境、pre_production准生产环境、staging预发环境、testing测试环境、development开发环境、disaster_recovery容灾环境
+	Department       string      `gorm:"size:100" json:"department"`                 // 资产所属部门，最大100字符
+	Importance       string      `gorm:"size:20" json:"importance"`                  // 资产重要性：extremely_high极高、high高、medium中、low低
+	MlpsLevel        string      `gorm:"size:20" json:"mlps_level"`                  // 等保等级：一级、二级、三级、四级、五级
+	ProjectID        uint        `json:"project_id"`                                 // 关联项目ID，外键
+	Project          Project     `gorm:"foreignkey:ProjectID" json:"project"`        // 关联的项目对象
+	AssetGroupID     *uint       `json:"asset_group_id"`                             // 所属资产组ID，外键，可为空
+	AssetGroup       *AssetGroup `gorm:"foreignkey:AssetGroupID" json:"asset_group"` // 关联的资产组对象
+	CreatedBy        uint        `json:"created_by"`                                 // 创建者用户ID，外键
+	Creator          User        `gorm:"foreignkey:CreatedBy" json:"creator"`        // 创建者用户对象
+	Tags             string      `gorm:"size:500" json:"tags"`                       // 资产标签，用逗号分隔，便于分类和搜索
+	Status           string      `gorm:"size:20;default:'active'" json:"status"`     // 资产状态：active活跃、inactive非活跃、maintenance维护中
+	Description      string      `gorm:"type:text" json:"description"`               // 资产详细描述，长文本类型
+	CreatedAt        time.Time   `json:"created_at"`                                 // 创建时间，GORM自动管理
+	UpdatedAt        time.Time   `json:"updated_at"`                                 // 更新时间，GORM自动管理
+	DeletedAt        *time.Time  `sql:"index" json:"deleted_at"`                     // 删除时间，软删除标记
 }
 
 // AssetGroup结构体定义资产组表的数据模型

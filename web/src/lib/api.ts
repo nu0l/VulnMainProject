@@ -736,9 +736,13 @@ export interface Asset {
   port: string;
   os?: string;
   owner: string;
+  construction_unit?: string;
+  development_unit?: string;
+  responsible_dept?: string;
   environment: string;
   department: string;
   importance: string;
+  mlps_level?: string;
   project_id: number;
   project: Project;
   asset_group_id?: number;
@@ -974,9 +978,13 @@ export interface AssetCreateRequest {
   port: string;
   os?: string;
   owner: string;
+  construction_unit?: string;
+  development_unit?: string;
+  responsible_dept?: string;
   environment: string;
   department: string;
   importance: string;
+  mlps_level?: string;
   project_id: number;
   tags?: string;
   description?: string;
@@ -1161,18 +1169,9 @@ export const assetApi = {
 
   // 批量导入资产
   importAssets: async (file: File, projectId: number): Promise<ApiResponse<any>> => {
-    console.log('准备发送文件:', file); // 调试日志
-    console.log('项目ID:', projectId); // 调试日志
-
     const formData = new FormData();
     formData.append('file', file);
     formData.append('project_id', projectId.toString());
-
-    // 调试：打印FormData内容
-    console.log('FormData内容:');
-    for (let [key, value] of formData.entries()) {
-      console.log(key, value);
-    }
 
     const response = await api.post('/assets/import', formData, {
       headers: {
