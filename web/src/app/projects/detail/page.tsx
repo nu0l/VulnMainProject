@@ -83,6 +83,11 @@ export default function ProjectDetailPage() {
 
   // 漏洞相关状态
   const [vulnerabilities, setVulnerabilities] = useState<Vulnerability[]>([]);
+  const [selectedVulnIds, setSelectedVulnIds] = useState<number[]>([]);
+  const [vulnExporting, setVulnExporting] = useState(false);
+  const [vulnImportModalVisible, setVulnImportModalVisible] = useState(false);
+  const [vulnImporting, setVulnImporting] = useState(false);
+  const [vulnUploadFile, setVulnUploadFile] = useState<File | null>(null);
   const [vulnModalVisible, setVulnModalVisible] = useState(false);
   const [vulnLoading, setVulnLoading] = useState(false);
   const [editingVuln, setEditingVuln] = useState<Vulnerability | null>(null);
@@ -1073,6 +1078,67 @@ export default function ProjectDetailPage() {
     }
   };
 
+  const handleExportVulns = async () => {
+    setVulnExporting(true);
+    try {
+      const blob = await vulnApi.exportVulns(selectedVulnIds, parseInt(projectId));
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `vulns_${projectId}_${new Date().getTime()}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      Toast.success('漏洞清单导出成功');
+    } catch (error: any) {
+      Toast.error(error.response?.data?.msg || '漏洞导出失败');
+    } finally {
+      setVulnExporting(false);
+    }
+  };
+
+  const handleDownloadVulnTemplate = async () => {
+    try {
+      const blob = await vulnApi.downloadImportTemplate();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'vuln_import_template.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      Toast.error('下载模板失败');
+    }
+  };
+
+  const handleImportVulns = async () => {
+    if (!vulnUploadFile) {
+      Toast.warning('请选择要导入的Excel文件');
+      return;
+    }
+
+    setVulnImporting(true);
+    try {
+      const response = await vulnApi.importVulns(vulnUploadFile, parseInt(projectId));
+      if (response.code === 200) {
+        const result = response.data || {};
+        Toast.success(`导入完成：成功 ${result.success_count || 0} 条，失败 ${result.failure_count || 0} 条`);
+        setVulnImportModalVisible(false);
+        setVulnUploadFile(null);
+        await loadVulnerabilities();
+      } else {
+        Toast.error(response.msg || '导入失败');
+      }
+    } catch (error: any) {
+      Toast.error(error.response?.data?.msg || '导入失败');
+    } finally {
+      setVulnImporting(false);
+    }
+  };
+
   // 漏洞表格列定义
   const vulnColumns = [
     {
@@ -1631,7 +1697,16 @@ export default function ProjectDetailPage() {
             }
             itemKey="vulnerabilities"
           >
-            <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+            <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
+              <Space>
+                <Button icon={<IconDownload />} onClick={handleExportVulns} loading={vulnExporting}>导出漏洞清单</Button>
+                {(isAdmin || isSecurityEngineer) && (
+                  <>
+                    <Button icon={<IconUpload />} onClick={() => setVulnImportModalVisible(true)}>批量导入漏洞</Button>
+                    <Button theme="borderless" onClick={handleDownloadVulnTemplate}>下载导入模板</Button>
+                  </>
+                )}
+              </Space>
               {(isAdmin || isSecurityEngineer) && (
                 <Button
                   theme="solid"
@@ -1659,6 +1734,10 @@ export default function ProjectDetailPage() {
             <Table
               columns={vulnColumns}
               dataSource={vulnerabilities}
+              rowSelection={{
+                selectedRowKeys: selectedVulnIds,
+                onChange: (selectedRowKeys) => setSelectedVulnIds(selectedRowKeys as number[]),
+              }}
               loading={vulnLoading}
               pagination={{
                 showSizeChanger: true,
@@ -2411,6 +2490,24 @@ export default function ProjectDetailPage() {
                 </div>
               </div>
 
+              {viewingVuln.comments && viewingVuln.comments.length > 0 && (
+                <div style={{ marginTop: '20px' }}>
+                  <Title heading={6}>处置备注</Title>
+                  <List
+                    dataSource={viewingVuln.comments}
+                    renderItem={(item: any) => (
+                      <List.Item>
+                        <div>
+                          <Text strong>{item.user?.real_name || item.user?.username || '未知用户'}</Text>
+                          <Text type="tertiary" size="small" style={{ marginLeft: 8 }}>{new Date(item.created_at).toLocaleString()}</Text>
+                          <div style={{ marginTop: 4 }}><Text>{item.content}</Text></div>
+                        </div>
+                      </List.Item>
+                    )}
+                  />
+                </div>
+              )}
+
               {/* 左侧底部占位，确保时间线内容不会贴着底部 */}
               <div style={{ height: '24px' }} />
             </div>
@@ -2796,6 +2893,43 @@ export default function ProjectDetailPage() {
             />
           </div>
         </div>
+      </Modal>
+
+      <Modal
+        title="批量导入漏洞"
+        visible={vulnImportModalVisible}
+        onCancel={() => {
+          setVulnImportModalVisible(false);
+          setVulnUploadFile(null);
+        }}
+        footer={
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Button onClick={handleDownloadVulnTemplate}>下载模板</Button>
+            <Space>
+              <Button onClick={() => setVulnImportModalVisible(false)}>取消</Button>
+              <Button
+                theme="solid"
+                type="primary"
+                loading={vulnImporting}
+                disabled={!vulnUploadFile}
+                onClick={handleImportVulns}
+              >
+                {vulnImporting ? '导入中...' : (vulnUploadFile ? '开始导入' : '请先选择文件')}
+              </Button>
+            </Space>
+          </div>
+        }
+        width={600}
+        maskClosable={false}
+      >
+        <div style={{ marginBottom: 12 }}>
+          <Text type="secondary">支持 .xlsx/.xls，建议先下载模板填写后再导入。</Text>
+        </div>
+        <input
+          type="file"
+          accept=".xlsx,.xls"
+          onChange={(e) => setVulnUploadFile(e.target.files?.[0] || null)}
+        />
       </Modal>
 
       {/* 状态变更弹窗（研发工程师专用） */}

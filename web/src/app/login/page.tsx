@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Form, Button, Toast, Typography } from '@douyinfe/semi-ui';
 import { IconUser, IconLock, IconEyeOpened, IconEyeClosed } from '@douyinfe/semi-icons';
-import { authApi, authUtils, systemApi, type LoginRequest, type SystemInfo } from '@/lib/api';
+import { authApi, authUtils, systemApi, resolveImageUrl, type LoginRequest, type SystemInfo } from '@/lib/api';
 
 const { Title, Text } = Typography;
 
@@ -14,9 +14,13 @@ export default function LoginPage() {
   const [isTablet, setIsTablet] = useState(false);
   const [systemInfo, setSystemInfo] = useState<SystemInfo>({
     system_name: 'VulnMain',
+    system_title: '漏洞管理平台',
     company_name: 'xxxxxx科技有限公司',
     logo: '',
-    version: '1.0.0'
+    login_background: '/login.jpg',
+    version: '1.0.0',
+    mfa_enabled: false,
+    mfa_optional: true,
   });
 
   // 监听窗口大小变化
@@ -67,7 +71,8 @@ export default function LoginPage() {
     try {
       const loginData: LoginRequest = {
         username: values.UserName.trim(),
-        password: values.PassWord
+        password: values.PassWord,
+        second_factor_code: values.SecondFactorCode?.trim() || undefined,
       };
 
       const response = await authApi.login(loginData);
@@ -109,7 +114,7 @@ export default function LoginPage() {
         <div
           style={{
             width: isTablet ? '35%' : '40%',
-            backgroundImage: 'url("/login.jpg")',
+            backgroundImage: `url(${resolveImageUrl(systemInfo.login_background || '/login.jpg')})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
@@ -134,7 +139,7 @@ export default function LoginPage() {
             left: 0,
             right: 0,
             height: '35vh',
-            backgroundImage: 'url("/login.jpg")',
+            backgroundImage: `url(${resolveImageUrl(systemInfo.login_background || '/login.jpg')})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
@@ -413,6 +418,22 @@ export default function LoginPage() {
               }}
             />
           </div>
+
+
+          {/* 二次验证码（可选，开启MFA时必填） */}
+            <div style={{ marginBottom: isMobile ? '20px' : '22px', position: 'relative' }}>
+              <Form.Input
+                field="SecondFactorCode"
+                placeholder="二次验证码（TOTP/短信，可选）"
+                size="large"
+                style={{
+                  height: isMobile ? '48px' : '50px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: isMobile ? '10px' : '12px',
+                  backgroundColor: '#ffffff',
+                } as any}
+              />
+            </div>
 
           {/* 登录按钮 */}
           <Button

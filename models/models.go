@@ -44,6 +44,7 @@ func AutoMigrate() error {
 		&VulnComment{},          // 漏洞评论表，记录漏洞处理过程中的评论
 		&VulnTimeline{},         // 漏洞时间线表，记录漏洞处理的时间节点
 		&VulnDeadlineReminder{}, // 漏洞截止时间提醒记录表，避免重复发送提醒
+		&SecurityKnowledge{},    // 安全知识库条目
 
 		// 系统管理相关表
 		&SystemConfig{}, // 系统配置表，存储系统配置参数
@@ -118,6 +119,8 @@ func InitDefaultData() error {
 		{Name: "修复漏洞", Code: "vuln:fix", Module: "vuln", Action: "fix", Description: "标记漏洞为已修复"},
 		{Name: "忽略漏洞", Code: "vuln:ignore", Module: "vuln", Action: "ignore", Description: "忽略漏洞"},
 		{Name: "修改漏洞状态", Code: "vuln:change_status", Module: "vuln", Action: "change_status", Description: "修改漏洞状态"},
+		{Name: "查看知识库", Code: "knowledge:view", Module: "knowledge", Action: "view", Description: "查看安全知识库"},
+		{Name: "管理知识库", Code: "knowledge:edit", Module: "knowledge", Action: "edit", Description: "新增/编辑/删除知识库"},
 
 		// 资产管理模块权限，包含网络资产的管理操作
 		{Name: "查看资产", Code: "asset:view", Module: "asset", Action: "view", Description: "查看资产列表和详情"},
@@ -202,6 +205,7 @@ func InitDefaultData() error {
 		"user:view",                                                                                 // 用户查看权限（查看研发工程师列表等）
 		"vuln:view", "vuln:create", "vuln:edit", "vuln:assign", "vuln:retest", "vuln:change_status", // 漏洞管理权限
 		"asset:view", "asset:create", "asset:edit", "asset:delete", // 资产管理权限（只能管理自己名下的资产）
+		"knowledge:view", "knowledge:edit", // 知识库管理权限
 	}
 	assignRolePermissions("security_engineer", securityEngineerPermissions)
 
@@ -211,6 +215,7 @@ func InitDefaultData() error {
 		"dashboard:view",                                           // 首页查看权限
 		"project:view",                                             // 项目查看权限（查看自己名下的项目）
 		"vuln:view", "vuln:edit", "vuln:fix", "vuln:change_status", // 漏洞查看、编辑、修复权限（只能处理分配给自己的漏洞）
+		"knowledge:view", // 可查看知识库推荐
 	}
 	assignRolePermissions("dev_engineer", devEngineerPermissions)
 
@@ -226,11 +231,11 @@ func InitDefaultData() error {
 
 		// 创建默认管理员用户
 		admin := User{
-			Username: "admin",           // 用户名
-			Email:    "admin@vulnmain.com",  // 邮箱地址
-			RealName: "系统管理员",           // 真实姓名
-			Status:   1,                 // 用户状态（1=启用）
-			RoleID:   superAdminRole.ID, // 关联超级管理员角色
+			Username: "admin",              // 用户名
+			Email:    "admin@vulnmain.com", // 邮箱地址
+			RealName: "系统管理员",              // 真实姓名
+			Status:   1,                    // 用户状态（1=启用）
+			RoleID:   superAdminRole.ID,    // 关联超级管理员角色
 		}
 		// 设置默认密码
 		admin.SetPassword("admin123")
@@ -252,6 +257,8 @@ func InitDefaultData() error {
 		{Key: "system.name", Value: "VulnMain", Type: "string", Group: "system", Description: "系统名称", IsPublic: true},
 		{Key: "system.company_name", Value: "xxxxxx科技有限公司", Type: "string", Group: "system", Description: "公司名称", IsPublic: true},
 		{Key: "system.title", Value: "漏洞管理平台", Type: "string", Group: "system", Description: "系统标题", IsPublic: true},
+		{Key: "system.logo", Value: "", Type: "string", Group: "system", Description: "系统Logo地址", IsPublic: true},
+		{Key: "system.login_background", Value: "/login.jpg", Type: "string", Group: "system", Description: "登录背景图地址", IsPublic: true},
 
 		// 认证配置
 		{Key: "auth.jwt.secret", Value: secret, Type: "string", Group: "auth", Description: "JWT密钥", IsPublic: false},
@@ -275,6 +282,24 @@ func InitDefaultData() error {
 		{Key: "password.require_special", Value: "false", Type: "bool", Group: "password", Description: "密码需要包含特殊字符", IsPublic: false},
 		{Key: "upload.max_size", Value: "10", Type: "int", Group: "upload", Description: "文件上传最大大小(MB)", IsPublic: true},
 		{Key: "upload.allowed_types", Value: "jpg,jpeg,png", Type: "string", Group: "upload", Description: "允许上传的文件类型", IsPublic: true},
+
+		// Webhook 联动告警配置
+		{Key: "webhook.enabled", Value: "false", Type: "bool", Group: "webhook", Description: "启用Webhook联动告警", IsPublic: false},
+		{Key: "webhook.timeout_seconds", Value: "8", Type: "int", Group: "webhook", Description: "Webhook请求超时(秒)", IsPublic: false},
+		{Key: "webhook.events", Value: "vuln_detected,ticket_timeout,vuln_fix_failed,vuln_status_changed,vuln_deadline_reminder", Type: "string", Group: "webhook", Description: "启用的事件列表，逗号分隔", IsPublic: false},
+		{Key: "webhook.endpoints", Value: "[]", Type: "json", Group: "webhook", Description: "Webhook终端配置(JSON数组，支持dingtalk/feishu/lanxin/custom)", IsPublic: false},
+
+		// AI 修复建议配置
+		{Key: "ai.mode", Value: "local", Type: "string", Group: "ai", Description: "AI模式: local/remote", IsPublic: false},
+		{Key: "ai.remote.endpoint", Value: "", Type: "string", Group: "ai", Description: "远程AI接口地址", IsPublic: false},
+		{Key: "ai.remote.api_key", Value: "", Type: "string", Group: "ai", Description: "远程AI接口密钥", IsPublic: false},
+
+		// 多因子认证配置
+		{Key: "auth.mfa.enabled", Value: "false", Type: "bool", Group: "auth", Description: "启用登录二次验证", IsPublic: false},
+		{Key: "auth.mfa.optional", Value: "true", Type: "bool", Group: "auth", Description: "二次验证可选(开启后可不填验证码)", IsPublic: false},
+		{Key: "auth.mfa.method", Value: "totp", Type: "string", Group: "auth", Description: "二次验证方式: totp/sms", IsPublic: false},
+		{Key: "auth.mfa.totp_secret", Value: "", Type: "string", Group: "auth", Description: "TOTP共享密钥(Base32)", IsPublic: false},
+		{Key: "auth.mfa.sms_mock_code", Value: "123456", Type: "string", Group: "auth", Description: "短信验证码(测试环境)", IsPublic: false},
 
 		// LDAP 配置
 		{Key: "ldap.enabled", Value: "false", Type: "bool", Group: "ldap", Description: "启用LDAP认证与同步", IsPublic: false},
@@ -314,21 +339,21 @@ func InitDefaultData() error {
 
 // WeeklyReport 周报记录模型
 type WeeklyReport struct {
-	ID               uint      `gorm:"primaryKey" json:"id"`
-	WeekStart        string    `json:"week_start"`        // 周开始日期
-	WeekEnd          string    `json:"week_end"`          // 周结束日期
-	FileName         string    `json:"file_name"`         // PDF文件名
-	FilePath         string    `json:"file_path"`         // PDF文件路径
-	FileSize         int64     `json:"file_size"`         // 文件大小（字节）
-	TotalSubmitted   int64     `json:"total_submitted"`   // 本周提交漏洞总数
-	TotalFixed       int64     `json:"total_fixed"`       // 本周修复漏洞总数
-	TotalFixing      int64     `json:"total_fixing"`      // 修复中漏洞数
-	TotalRetesting   int64     `json:"total_retesting"`   // 待复测漏洞数
-	GeneratedBy      uint      `json:"generated_by"`      // 生成者用户ID
-	GeneratedByName  string    `json:"generated_by_name"` // 生成者姓名
-	SentTo           string    `json:"sent_to"`           // 发送邮箱
-	SentAt           *time.Time `json:"sent_at"`          // 发送时间
-	Status           string    `json:"status"`            // 状态：generated, sent, failed
-	CreatedAt        time.Time `json:"created_at"`        // 创建时间
-	UpdatedAt        time.Time `json:"updated_at"`        // 更新时间
+	ID              uint       `gorm:"primaryKey" json:"id"`
+	WeekStart       string     `json:"week_start"`        // 周开始日期
+	WeekEnd         string     `json:"week_end"`          // 周结束日期
+	FileName        string     `json:"file_name"`         // PDF文件名
+	FilePath        string     `json:"file_path"`         // PDF文件路径
+	FileSize        int64      `json:"file_size"`         // 文件大小（字节）
+	TotalSubmitted  int64      `json:"total_submitted"`   // 本周提交漏洞总数
+	TotalFixed      int64      `json:"total_fixed"`       // 本周修复漏洞总数
+	TotalFixing     int64      `json:"total_fixing"`      // 修复中漏洞数
+	TotalRetesting  int64      `json:"total_retesting"`   // 待复测漏洞数
+	GeneratedBy     uint       `json:"generated_by"`      // 生成者用户ID
+	GeneratedByName string     `json:"generated_by_name"` // 生成者姓名
+	SentTo          string     `json:"sent_to"`           // 发送邮箱
+	SentAt          *time.Time `json:"sent_at"`           // 发送时间
+	Status          string     `json:"status"`            // 状态：generated, sent, failed
+	CreatedAt       time.Time  `json:"created_at"`        // 创建时间
+	UpdatedAt       time.Time  `json:"updated_at"`        // 更新时间
 }

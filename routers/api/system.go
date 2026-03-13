@@ -32,6 +32,10 @@ func GetPublicSystemInfo(c *gin.Context) {
 	result["system_title"] = "漏洞管理平台"
 	result["company_name"] = "漏洞管理平台"
 	result["version"] = "1.0.0"
+	result["logo"] = ""
+	result["login_background"] = "/login.jpg"
+	result["mfa_enabled"] = false
+	result["mfa_optional"] = true
 
 	// 从配置中获取实际值
 	for _, config := range configs {
@@ -44,7 +48,18 @@ func GetPublicSystemInfo(c *gin.Context) {
 			result["company_name"] = config.Value
 		case "system.version":
 			result["version"] = config.Value
+		case "system.logo":
+			result["logo"] = config.Value
+		case "system.login_background":
+			result["login_background"] = config.Value
 		}
+	}
+
+	if mfaEnabledConfig, err := systemService.GetSystemConfig("auth.mfa.enabled"); err == nil {
+		result["mfa_enabled"] = mfaEnabledConfig.Value == "true"
+	}
+	if mfaOptionalConfig, err := systemService.GetSystemConfig("auth.mfa.optional"); err == nil {
+		result["mfa_optional"] = mfaOptionalConfig.Value != "false"
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -437,7 +452,6 @@ func TestEmailConfig(c *gin.Context) {
 		"msg":  "测试邮件发送成功",
 	})
 }
-
 
 // TestLDAPConfig 测试LDAP配置连接
 func TestLDAPConfig(c *gin.Context) {
