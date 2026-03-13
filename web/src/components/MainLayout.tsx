@@ -58,6 +58,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
         return '研发工程师';
       case 4:
         return '普通用户';
+      case 5:
+        return '领导';
       default:
         return '未知角色';
     }
@@ -92,6 +94,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
     } else if (pathname.startsWith('/settings')) {
       // 匹配 /settings 和 /settings/* 路径
       setSelectedKey('settings');
+    } else if (pathname.startsWith('/assets')) {
+      // 匹配 /assets 和 /assets/* 路径
+      setSelectedKey('assets');
     } else {
       // 默认选中首页
       setSelectedKey('home');
@@ -115,6 +120,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
         break;
       case 'settings':
         router.push('/settings');
+        break;
+      case 'assets':
+        router.push('/assets');
         break;
       default:
         break;

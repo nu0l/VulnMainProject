@@ -1,0 +1,59 @@
+version: '3.9'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: vulnmain-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-vulnmain123}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-vulnmain}
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-p${MYSQL_ROOT_PASSWORD:-vulnmain123}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vulnmain-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: 5000
+      DATASOURCE_DRIVERNAME: mysql
+      DATASOURCE_HOST: mysql
+      DATASOURCE_PORT: 3306
+      DATASOURCE_DATABASE: ${MYSQL_DATABASE:-vulnmain}
+      DATASOURCE_USERNAME: root
+      DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-vulnmain123}
+      DATASOURCE_CHARSET: utf8mb4
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./uploads:/app/uploads
+
+  frontend:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5000/api}
+    container_name: vulnmain-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+
+volumes:
+  mysql_data:
