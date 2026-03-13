@@ -571,9 +571,12 @@ export const userApi = {
   },
 
   // 上传漏洞图片
-  uploadVulnImage: async (file: File): Promise<ApiResponse<{ image_url: string }>> => {
+  uploadVulnImage: async (file: File, target?: 'logo' | 'login_background'): Promise<ApiResponse<{ image_url: string }>> => {
     const formData = new FormData();
     formData.append('image', file);
+    if (target) {
+      formData.append('target', target);
+    }
 
     const response = await api.post('/upload/vuln-image', formData, {
       headers: {
@@ -1393,6 +1396,10 @@ export const knowledgeApi = {
     const response = await api.get('/knowledge/recommend', {
       params: { vuln_type: vulnType, severity },
     });
+    return response.data;
+  },
+  alerts: async (params?: { page?: number; page_size?: number }): Promise<ApiResponse<{ items: Array<{ title: string; severity: string; source: string; publish_at: string; link: string; summary: string }>; total: number; page: number; page_size: number; total_pages: number }>> => {
+    const response = await api.get('/knowledge/alerts', { params });
     return response.data;
   },
 };

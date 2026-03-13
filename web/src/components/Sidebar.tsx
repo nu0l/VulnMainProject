@@ -70,7 +70,7 @@ export default function Sidebar({ selectedKey = 'home', onSelect }: SidebarProps
       },
       {
         itemKey: 'knowledge',
-        text: '知识库（漏洞库）',
+        text: '知识库',
         icon: <IconSetting />
       },
       {
@@ -104,7 +104,7 @@ export default function Sidebar({ selectedKey = 'home', onSelect }: SidebarProps
         ...homeAndProject,
         {
           itemKey: 'knowledge',
-          text: '知识库（漏洞库）',
+          text: '知识库',
           icon: <IconSetting />
         },
         {

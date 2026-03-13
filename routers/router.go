@@ -58,6 +58,9 @@ func InitRouter(r *gin.Engine) *gin.Engine {
 
 	// 专门为周报PDF文件提供静态访问
 	r.Static("/weekly-reports", filepath.Join(uploadRoot, "weekly"))
+	// 系统品牌图片根路径访问（用于登录页/logo回退）
+	r.StaticFile("/logo.png", filepath.Join(uploadRoot, "vuln-images", "logo.png"))
+	r.StaticFile("/login.jpg", filepath.Join(uploadRoot, "vuln-images", "login.jpg"))
 
 	// 公开API组 - 不需要JWT认证的接口
 	// 这些接口可以匿名访问，主要用于用户登录和令牌刷新
@@ -236,6 +239,7 @@ func InitRouter(r *gin.Engine) *gin.Engine {
 		{
 			knowledgeViewAPI.GET("", api.GetKnowledgeList)
 			knowledgeViewAPI.GET("/recommend", api.RecommendKnowledge)
+			knowledgeViewAPI.GET("/alerts", api.GetKnowledgeAlerts)
 		}
 
 		knowledgeEditAPI := knowledgeAPI.Group("")

@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Button, Card, Input, Space, Typography } from '@douyinfe/semi-ui';
+import { Button, Card, Space, Typography, TextArea } from '@douyinfe/semi-ui';
 import { vulnApi } from '@/lib/api';
 
 const { Title, Text } = Typography;
@@ -39,9 +39,10 @@ export default function RepeaterPage() {
     <div style={{ padding: 24 }}>
       <Card title={<Title heading={4} style={{ margin: 0 }}>漏洞一键检测</Title>}>
         <Text type="secondary">类似 Burp Repeater：编辑请求包、发送请求、查看响应和 HTML 渲染预览。</Text>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 16 }}>
-          <Card title="Request" bodyStyle={{ padding: 12 }}>
-            <Input.TextArea
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 16, alignItems: 'stretch' }}>
+          <Card title="Request" style={{ height: '100%' }} bodyStyle={{ padding: 12, height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <TextArea
+              style={{ flex: 1 }}
               value={requestPacket}
               onChange={setRequestPacket}
               placeholder={'GET /api/user?id=1 HTTP/1.1\nHost: example.com\nCookie: session=xxx'}
@@ -52,8 +53,8 @@ export default function RepeaterPage() {
             </Space>
           </Card>
 
-          <Card title={`Response ${statusLine ? `(${statusLine})` : ''}`} bodyStyle={{ padding: 12 }}>
-            <Input.TextArea value={responseText} readonly autosize={{ minRows: 22, maxRows: 26 }} />
+          <Card title={`Response ${statusLine ? `(${statusLine})` : ''}`} style={{ height: '100%' }} bodyStyle={{ padding: 12, height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <TextArea style={{ flex: 1 }} value={responseText} readonly autosize={{ minRows: 22, maxRows: 26 }} />
           </Card>
         </div>
 

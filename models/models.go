@@ -295,6 +295,10 @@ func InitDefaultData() error {
 		{Key: "upload.max_size", Value: "10", Type: "int", Group: "upload", Description: "文件上传最大大小(MB)", IsPublic: true},
 		{Key: "upload.allowed_types", Value: "jpg,jpeg,png", Type: "string", Group: "upload", Description: "允许上传的文件类型", IsPublic: true},
 
+		// 漏洞预警订阅配置
+		{Key: "knowledge.alert_enabled", Value: "false", Type: "bool", Group: "knowledge_alert", Description: "启用漏洞预警订阅", IsPublic: true},
+		{Key: "knowledge.alert_feeds", Value: "[]", Type: "json", Group: "knowledge_alert", Description: "漏洞预警列表(JSON数组: title,severity,source,publish_at,link,summary)", IsPublic: false},
+
 		// Webhook 联动告警配置
 		{Key: "webhook.enabled", Value: "false", Type: "bool", Group: "webhook", Description: "启用Webhook联动告警", IsPublic: false},
 		{Key: "webhook.timeout_seconds", Value: "8", Type: "int", Group: "webhook", Description: "Webhook请求超时(秒)", IsPublic: false},

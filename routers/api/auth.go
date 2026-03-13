@@ -308,26 +308,9 @@ func UploadVulnImage(c *gin.Context) {
 		return
 	}
 
-	// 构造基础URL - 固定指向后端服务器
-	scheme := "http"
-	if c.Request.TLS != nil {
-		scheme = "https"
-	}
-
-	// 固定使用后端地址，避免前端端口影响
-	host := c.Request.Host
-	if strings.Contains(host, ":3000") || strings.Contains(host, "localhost") {
-		// 如果是从前端访问，固定使用后端地址
-		host = "127.0.0.1"
-		if scheme == "https" {
-			host = "127.0.0.1:443" // 如果需要HTTPS
-		}
-	}
-
-	baseURL := fmt.Sprintf("%s://%s", scheme, host)
-
 	// 调用用户服务上传图片
-	imageURL, err := userService.UploadVulnImage(userID.(uint), file, baseURL)
+	target := c.PostForm("target")
+	imageURL, err := userService.UploadVulnImage(userID.(uint), file, "", target)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 400,
