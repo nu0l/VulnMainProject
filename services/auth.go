@@ -3,13 +3,17 @@
 package services
 
 import (
-	"errors"             // 导入错误处理包
+	"crypto/hmac"
+	"crypto/sha1"
+	"encoding/base32"
+	"encoding/binary"
+	"errors"
+	"fmt"
+	"strings"            // 导入错误处理包
 	"time"               // 导入时间包，用于处理登录时间
 	Init "vulnmain/Init" // 导入初始化包，获取数据库连接
 	"vulnmain/models"    // 导入模型包，使用用户和日志模型
 	"vulnmain/utils"     // 导入工具包，使用JWT相关功能
-	"fmt"
-
 )
 
 // AuthService结构体定义认证服务
@@ -19,8 +23,9 @@ type AuthService struct{}
 // LoginRequest结构体定义用户登录请求参数
 // 仅支持本地用户名密码登录
 type LoginRequest struct {
-	Username string `json:"username" binding:"required"` // 用户名，必填字段
-	Password string `json:"password" binding:"required"` // 密码，必填字段
+	Username         string `json:"username" binding:"required"` // 用户名，必填字段
+	Password         string `json:"password" binding:"required"` // 密码，必填字段
+	SecondFactorCode string `json:"second_factor_code"`          // 二次验证码（TOTP/短信）
 }
 
 // LoginResponse结构体定义登录成功后的响应数据
@@ -95,6 +100,10 @@ func (s *AuthService) LocalLogin(req *LoginRequest) (*LoginResponse, error) {
 	s.LogLogin(&user, "success", "本地登录成功")
 
 ISSUE_TOKEN:
+	if err := s.verifySecondFactor(req.SecondFactorCode); err != nil {
+		return nil, err
+	}
+
 	// 更新用户最后登录时间
 	now := time.Now().Truncate(time.Second)
 	user.LastLoginAt = &now
@@ -187,4 +196,62 @@ func (s *AuthService) LogLogin(user *models.User, status, details string) {
 	}
 
 	db.Create(&log)
+}
+
+func (s *AuthService) verifySecondFactor(code string) error {
+	db := Init.GetDB()
+	get := func(key, dft string) string {
+		var v string
+		db.Table("system_configs").Select("value").Where("`key` = ?", key).Scan(&v)
+		if strings.TrimSpace(v) == "" {
+			return dft
+		}
+		return strings.TrimSpace(v)
+	}
+	if get("auth.mfa.enabled", "false") != "true" {
+		return nil
+	}
+	if strings.TrimSpace(code) == "" {
+		return errors.New("请填写二次验证码")
+	}
+	method := get("auth.mfa.method", "totp")
+	switch method {
+	case "sms":
+		if code != get("auth.mfa.sms_mock_code", "123456") {
+			return errors.New("短信验证码错误")
+		}
+	default:
+		secret := get("auth.mfa.totp_secret", "")
+		if secret == "" || !validateTOTP(secret, code) {
+			return errors.New("TOTP验证码错误")
+		}
+	}
+	return nil
+}
+
+func validateTOTP(secret, code string) bool {
+	counter := time.Now().Unix() / 30
+	for _, offset := range []int64{-1, 0, 1} {
+		if generateTOTP(secret, counter+offset) == code {
+			return true
+		}
+	}
+	return false
+}
+
+func generateTOTP(secret string, counter int64) string {
+	secret = strings.ToUpper(strings.TrimSpace(secret))
+	key, err := base32.StdEncoding.WithPadding(base32.NoPadding).DecodeString(secret)
+	if err != nil {
+		return ""
+	}
+	var msg [8]byte
+	binary.BigEndian.PutUint64(msg[:], uint64(counter))
+	h := hmac.New(sha1.New, key)
+	h.Write(msg[:])
+	hash := h.Sum(nil)
+	offset := hash[len(hash)-1] & 0x0f
+	binCode := (int(hash[offset])&0x7f)<<24 | (int(hash[offset+1])&0xff)<<16 | (int(hash[offset+2])&0xff)<<8 | (int(hash[offset+3]) & 0xff)
+	otp := binCode % 1000000
+	return fmt.Sprintf("%06d", otp)
 }

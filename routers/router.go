@@ -134,12 +134,14 @@ func InitRouter(r *gin.Engine) *gin.Engine {
 		vulnViewAPI := vulnAPI.Group("")
 		vulnViewAPI.Use(middleware.PermissionMiddleware("vuln:view"))
 		{
-			vulnViewAPI.GET("", api.GetVulnList)                          // 获取漏洞列表
-			vulnViewAPI.GET("/stats", api.GetVulnStats)                   // 获取漏洞统计信息
-			vulnViewAPI.GET("/:id", api.GetVuln)                          // 获取漏洞详情
-			vulnViewAPI.GET("/:id/timeline", api.GetVulnTimeline)         // 获取漏洞时间线
-			vulnViewAPI.POST("/export", api.ExportVulns)                  // 批量导出漏洞
-			vulnViewAPI.GET("/import/template", api.DownloadVulnTemplate) // 下载漏洞导入模板
+			vulnViewAPI.GET("", api.GetVulnList)                                // 获取漏洞列表
+			vulnViewAPI.GET("/stats", api.GetVulnStats)                         // 获取漏洞统计信息
+			vulnViewAPI.GET("/:id", api.GetVuln)                                // 获取漏洞详情
+			vulnViewAPI.GET("/:id/timeline", api.GetVulnTimeline)               // 获取漏洞时间线
+			vulnViewAPI.GET("/:id/recommend-fixes", api.RecommendFixStrategies) // 推荐历史修复策略
+			vulnViewAPI.GET("/compliance/export", api.ExportComplianceReport)   // 导出合规模板报告
+			vulnViewAPI.POST("/export", api.ExportVulns)                        // 批量导出漏洞
+			vulnViewAPI.GET("/import/template", api.DownloadVulnTemplate)       // 下载漏洞导入模板
 		}
 
 		// 漏洞创建权限组 - 可以创建新漏洞
@@ -154,9 +156,10 @@ func InitRouter(r *gin.Engine) *gin.Engine {
 		vulnEditAPI := vulnAPI.Group("")
 		vulnEditAPI.Use(middleware.PermissionMiddleware("vuln:edit"))
 		{
-			vulnEditAPI.PUT("/:id", api.UpdateVuln)               // 更新漏洞信息
-			vulnEditAPI.POST("/:id/comments", api.AddVulnComment) // 添加漏洞评论
-			vulnEditAPI.PUT("/:id/fix", api.FixVuln)              // 标记漏洞为已修复
+			vulnEditAPI.PUT("/:id", api.UpdateVuln)                                 // 更新漏洞信息
+			vulnEditAPI.POST("/:id/comments", api.AddVulnComment)                   // 添加漏洞评论
+			vulnEditAPI.POST("/:id/ai-fix-suggestion", api.GenerateAIFixSuggestion) // AI修复建议
+			vulnEditAPI.PUT("/:id/fix", api.FixVuln)                                // 标记漏洞为已修复
 		}
 
 		// 漏洞审核权限组 - 可以审核和复测漏洞
@@ -219,6 +222,23 @@ func InitRouter(r *gin.Engine) *gin.Engine {
 		// 	knowledgeAPI.GET("", api.GetKnowledgeList)     // 获取知识库列表
 		// 	knowledgeAPI.GET("/:id", api.GetKnowledge)     // 获取知识库详情
 		// }
+
+		// 安全知识库模块 - 支撑安全知识管理
+		knowledgeAPI := authAPI.Group("/knowledge")
+		knowledgeViewAPI := knowledgeAPI.Group("")
+		knowledgeViewAPI.Use(middleware.PermissionMiddleware("knowledge:view"))
+		{
+			knowledgeViewAPI.GET("", api.GetKnowledgeList)
+			knowledgeViewAPI.GET("/recommend", api.RecommendKnowledge)
+		}
+
+		knowledgeEditAPI := knowledgeAPI.Group("")
+		knowledgeEditAPI.Use(middleware.PermissionMiddleware("knowledge:edit"))
+		{
+			knowledgeEditAPI.POST("", api.CreateKnowledge)
+			knowledgeEditAPI.PUT("/:id", api.UpdateKnowledge)
+			knowledgeEditAPI.DELETE("/:id", api.DeleteKnowledge)
+		}
 
 		// 项目管理模块 - 采用分层权限控制
 		projectAPI := authAPI.Group("/projects")

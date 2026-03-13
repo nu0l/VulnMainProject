@@ -82,6 +82,7 @@ export interface ApiResponse<T = any> {
 export interface LoginRequest {
   username: string;
   password: string;
+  second_factor_code?: string;
 }
 
 export interface LoginResponse {
@@ -735,9 +736,13 @@ export interface Asset {
   port: string;
   os?: string;
   owner: string;
+  construction_unit?: string;
+  development_unit?: string;
+  responsible_dept?: string;
   environment: string;
   department: string;
   importance: string;
+  mlps_level?: string;
   project_id: number;
   project: Project;
   asset_group_id?: number;
@@ -973,9 +978,13 @@ export interface AssetCreateRequest {
   port: string;
   os?: string;
   owner: string;
+  construction_unit?: string;
+  development_unit?: string;
+  responsible_dept?: string;
   environment: string;
   department: string;
   importance: string;
+  mlps_level?: string;
   project_id: number;
   tags?: string;
   description?: string;
@@ -1091,6 +1100,30 @@ export const vulnApi = {
     });
     return response.data;
   },
+
+  // AI修复建议
+  generateAIFixSuggestion: async (id: number): Promise<ApiResponse<{content: string}>> => {
+    const response = await api.post(`/vulns/${id}/ai-fix-suggestion`);
+    return response.data;
+  },
+
+  // 历史修复策略推荐
+  recommendFixStrategies: async (id: number): Promise<ApiResponse<any[]>> => {
+    const response = await api.get(`/vulns/${id}/recommend-fixes`);
+    return response.data;
+  },
+
+  // 导出合规模板报告
+  exportComplianceReport: async (standard: 'mlps2' | 'iso27001' | 'finance', projectId?: number): Promise<Blob> => {
+    const response = await api.get('/vulns/compliance/export', {
+      params: {
+        standard,
+        project_id: projectId,
+      },
+      responseType: 'blob',
+    });
+    return response.data;
+  },
 };
 
 
@@ -1136,18 +1169,9 @@ export const assetApi = {
 
   // 批量导入资产
   importAssets: async (file: File, projectId: number): Promise<ApiResponse<any>> => {
-    console.log('准备发送文件:', file); // 调试日志
-    console.log('项目ID:', projectId); // 调试日志
-
     const formData = new FormData();
     formData.append('file', file);
     formData.append('project_id', projectId.toString());
-
-    // 调试：打印FormData内容
-    console.log('FormData内容:');
-    for (let [key, value] of formData.entries()) {
-      console.log(key, value);
-    }
 
     const response = await api.post('/assets/import', formData, {
       headers: {
@@ -1233,3 +1257,29 @@ export interface WeeklyReportRecord {
 }
 
 export default api;
+
+
+export const knowledgeApi = {
+  list: async (params?: { page?: number; page_size?: number; keyword?: string; vuln_type?: string }): Promise<ApiResponse<any>> => {
+    const response = await api.get('/knowledge', { params });
+    return response.data;
+  },
+  create: async (data: any): Promise<ApiResponse<any>> => {
+    const response = await api.post('/knowledge', data);
+    return response.data;
+  },
+  update: async (id: number, data: any): Promise<ApiResponse<any>> => {
+    const response = await api.put(`/knowledge/${id}`, data);
+    return response.data;
+  },
+  remove: async (id: number): Promise<ApiResponse<any>> => {
+    const response = await api.delete(`/knowledge/${id}`);
+    return response.data;
+  },
+  recommend: async (vulnType: string, severity?: string): Promise<ApiResponse<any[]>> => {
+    const response = await api.get('/knowledge/recommend', {
+      params: { vuln_type: vulnType, severity },
+    });
+    return response.data;
+  },
+};

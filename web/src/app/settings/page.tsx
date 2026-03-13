@@ -79,6 +79,12 @@ const CONFIG_GROUPS = {
     icon: <IconMail />,
     key: 'webhook'
   },
+  ai: {
+    title: 'AI 修复建议',
+    description: '配置本地/远程LLM接入',
+    icon: <IconSetting />,
+    key: 'ai'
+  },
 };
 
 export default function SettingsPage() {

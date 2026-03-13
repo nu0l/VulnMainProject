@@ -44,6 +44,7 @@ func AutoMigrate() error {
 		&VulnComment{},          // 漏洞评论表，记录漏洞处理过程中的评论
 		&VulnTimeline{},         // 漏洞时间线表，记录漏洞处理的时间节点
 		&VulnDeadlineReminder{}, // 漏洞截止时间提醒记录表，避免重复发送提醒
+		&SecurityKnowledge{},    // 安全知识库条目
 
 		// 系统管理相关表
 		&SystemConfig{}, // 系统配置表，存储系统配置参数
@@ -118,6 +119,8 @@ func InitDefaultData() error {
 		{Name: "修复漏洞", Code: "vuln:fix", Module: "vuln", Action: "fix", Description: "标记漏洞为已修复"},
 		{Name: "忽略漏洞", Code: "vuln:ignore", Module: "vuln", Action: "ignore", Description: "忽略漏洞"},
 		{Name: "修改漏洞状态", Code: "vuln:change_status", Module: "vuln", Action: "change_status", Description: "修改漏洞状态"},
+		{Name: "查看知识库", Code: "knowledge:view", Module: "knowledge", Action: "view", Description: "查看安全知识库"},
+		{Name: "管理知识库", Code: "knowledge:edit", Module: "knowledge", Action: "edit", Description: "新增/编辑/删除知识库"},
 
 		// 资产管理模块权限，包含网络资产的管理操作
 		{Name: "查看资产", Code: "asset:view", Module: "asset", Action: "view", Description: "查看资产列表和详情"},
@@ -202,6 +205,7 @@ func InitDefaultData() error {
 		"user:view",                                                                                 // 用户查看权限（查看研发工程师列表等）
 		"vuln:view", "vuln:create", "vuln:edit", "vuln:assign", "vuln:retest", "vuln:change_status", // 漏洞管理权限
 		"asset:view", "asset:create", "asset:edit", "asset:delete", // 资产管理权限（只能管理自己名下的资产）
+		"knowledge:view", "knowledge:edit", // 知识库管理权限
 	}
 	assignRolePermissions("security_engineer", securityEngineerPermissions)
 
@@ -211,6 +215,7 @@ func InitDefaultData() error {
 		"dashboard:view",                                           // 首页查看权限
 		"project:view",                                             // 项目查看权限（查看自己名下的项目）
 		"vuln:view", "vuln:edit", "vuln:fix", "vuln:change_status", // 漏洞查看、编辑、修复权限（只能处理分配给自己的漏洞）
+		"knowledge:view", // 可查看知识库推荐
 	}
 	assignRolePermissions("dev_engineer", devEngineerPermissions)
 
@@ -281,6 +286,17 @@ func InitDefaultData() error {
 		{Key: "webhook.timeout_seconds", Value: "8", Type: "int", Group: "webhook", Description: "Webhook请求超时(秒)", IsPublic: false},
 		{Key: "webhook.events", Value: "vuln_detected,ticket_timeout,vuln_fix_failed,vuln_status_changed,vuln_deadline_reminder", Type: "string", Group: "webhook", Description: "启用的事件列表，逗号分隔", IsPublic: false},
 		{Key: "webhook.endpoints", Value: "[]", Type: "json", Group: "webhook", Description: "Webhook终端配置(JSON数组，支持dingtalk/feishu/lanxin/custom)", IsPublic: false},
+
+		// AI 修复建议配置
+		{Key: "ai.mode", Value: "local", Type: "string", Group: "ai", Description: "AI模式: local/remote", IsPublic: false},
+		{Key: "ai.remote.endpoint", Value: "", Type: "string", Group: "ai", Description: "远程AI接口地址", IsPublic: false},
+		{Key: "ai.remote.api_key", Value: "", Type: "string", Group: "ai", Description: "远程AI接口密钥", IsPublic: false},
+
+		// 多因子认证配置
+		{Key: "auth.mfa.enabled", Value: "false", Type: "bool", Group: "auth", Description: "启用登录二次验证", IsPublic: false},
+		{Key: "auth.mfa.method", Value: "totp", Type: "string", Group: "auth", Description: "二次验证方式: totp/sms", IsPublic: false},
+		{Key: "auth.mfa.totp_secret", Value: "", Type: "string", Group: "auth", Description: "TOTP共享密钥(Base32)", IsPublic: false},
+		{Key: "auth.mfa.sms_mock_code", Value: "123456", Type: "string", Group: "auth", Description: "短信验证码(测试环境)", IsPublic: false},
 
 		// LDAP 配置
 		{Key: "ldap.enabled", Value: "false", Type: "bool", Group: "ldap", Description: "启用LDAP认证与同步", IsPublic: false},
