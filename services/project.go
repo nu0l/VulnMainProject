@@ -612,7 +612,7 @@ func (s *ProjectService) DeleteProject(projectID, userID uint, roleCode string) 
 	db := Init.GetDB()
 
 	// 检查项目是否存在和权限（只有超级管理员可以删除项目）
-	if roleCode != "super_admin" {
+	if roleCode != "super_admin" && roleCode != "leader" {
 		return errors.New("只有超级管理员可以删除项目")
 	}
 
