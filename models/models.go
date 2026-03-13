@@ -223,11 +223,11 @@ func InitDefaultData() error {
 	// 为领导角色分配权限（除系统设置外）
 	leaderPermissions := []string{
 		"dashboard:view",
-		"project:view", "project:create", "project:edit", "project:delete",
-		"user:view", "user:create", "user:edit", "user:delete", "user:reset_password",
-		"vuln:view", "vuln:create", "vuln:edit", "vuln:assign", "vuln:retest", "vuln:fix", "vuln:ignore", "vuln:change_status",
-		"asset:view", "asset:create", "asset:edit", "asset:delete",
-		"knowledge:view", "knowledge:edit",
+		"project:view",
+		"user:view",
+		"vuln:view",
+		"asset:view",
+		"knowledge:view",
 	}
 	assignRolePermissions("leader", leaderPermissions)
 
