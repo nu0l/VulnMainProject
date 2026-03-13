@@ -21,60 +21,68 @@ type AssetService struct{}
 // AssetCreateRequest结构体定义创建资产的请求参数
 // 包含创建资产时需要的所有必要信息
 type AssetCreateRequest struct {
-	Name         string `json:"name" binding:"required"` // 资产名称，必填字段
-	Type         string `json:"type" binding:"required"` // 资产类型，必填字段，如web应用、数据库等
-	Category     string `json:"category"`                // 资产分类，选填字段
-	URL          string `json:"url"`                     // 资产URL地址，选填字段
-	IP           string `json:"ip"`                      // 资产IP地址，选填字段
-	Port         string `json:"port"`                    // 资产端口，选填字段
-	Domain       string `json:"domain"`                  // 资产域名，选填字段
-	Description  string `json:"description"`             // 资产描述信息，选填字段
-	OS           string `json:"os"`                      // 操作系统信息，选填字段
-	Importance   string `json:"importance"`              // 重要性级别，选填字段
-	Owner        string `json:"owner"`                   // 资产负责人，选填字段
-	Department   string `json:"department"`              // 所属部门，选填字段
-	Environment  string `json:"environment"`             // 所属环境，选填字段
-	ProjectID    *uint  `json:"project_id"`              // 所属项目ID，可为空
-	AssetGroupID *uint  `json:"asset_group_id"`          // 所属资产组ID，可为空
-	Tags         string `json:"tags"`                    // 资产标签，用逗号分隔
+	Name             string `json:"name" binding:"required"` // 资产名称，必填字段
+	Type             string `json:"type" binding:"required"` // 资产类型，必填字段，如web应用、数据库等
+	Category         string `json:"category"`                // 资产分类，选填字段
+	URL              string `json:"url"`                     // 资产URL地址，选填字段
+	IP               string `json:"ip"`                      // 资产IP地址，选填字段
+	Port             string `json:"port"`                    // 资产端口，选填字段
+	Domain           string `json:"domain"`                  // 资产域名，选填字段
+	Description      string `json:"description"`             // 资产描述信息，选填字段
+	OS               string `json:"os"`                      // 操作系统信息，选填字段
+	Importance       string `json:"importance"`              // 重要性级别，选填字段
+	Owner            string `json:"owner"`                   // 资产负责人，选填字段
+	ConstructionUnit string `json:"construction_unit"`       // 建设单位，选填字段
+	DevelopmentUnit  string `json:"development_unit"`        // 开发单位，选填字段
+	ResponsibleDept  string `json:"responsible_dept"`        // 负责部门，选填字段
+	Department       string `json:"department"`              // 所属部门，选填字段
+	Environment      string `json:"environment"`             // 所属环境，选填字段
+	MlpsLevel        string `json:"mlps_level"`              // 等保等级，选填字段
+	ProjectID        *uint  `json:"project_id"`              // 所属项目ID，可为空
+	AssetGroupID     *uint  `json:"asset_group_id"`          // 所属资产组ID，可为空
+	Tags             string `json:"tags"`                    // 资产标签，用逗号分隔
 }
 
 // AssetUpdateRequest结构体定义更新资产的请求参数
 // 所有字段都是可选的，只更新传入的非空字段
 type AssetUpdateRequest struct {
-	Name         string `json:"name"`           // 资产名称，选填字段
-	Type         string `json:"type"`           // 资产类型，选填字段
-	Category     string `json:"category"`       // 资产分类，选填字段
-	URL          string `json:"url"`            // 资产URL地址，选填字段
-	IP           string `json:"ip"`             // 资产IP地址，选填字段
-	Port         string `json:"port"`           // 资产端口，选填字段
-	Domain       string `json:"domain"`         // 资产域名，选填字段
-	Description  string `json:"description"`    // 资产描述信息，选填字段
-	OS           string `json:"os"`             // 操作系统信息，选填字段
-	Status       string `json:"status"`         // 资产状态，选填字段
-	Importance   string `json:"importance"`     // 重要性级别，选填字段
-	Owner        string `json:"owner"`          // 资产负责人，选填字段
-	Department   string `json:"department"`     // 所属部门，选填字段
-	Environment  string `json:"environment"`    // 所属环境，选填字段
-	AssetGroupID *uint  `json:"asset_group_id"` // 所属资产组ID，可为空
-	Tags         string `json:"tags"`           // 资产标签，用逗号分隔
+	Name             string `json:"name"`              // 资产名称，选填字段
+	Type             string `json:"type"`              // 资产类型，选填字段
+	Category         string `json:"category"`          // 资产分类，选填字段
+	URL              string `json:"url"`               // 资产URL地址，选填字段
+	IP               string `json:"ip"`                // 资产IP地址，选填字段
+	Port             string `json:"port"`              // 资产端口，选填字段
+	Domain           string `json:"domain"`            // 资产域名，选填字段
+	Description      string `json:"description"`       // 资产描述信息，选填字段
+	OS               string `json:"os"`                // 操作系统信息，选填字段
+	Status           string `json:"status"`            // 资产状态，选填字段
+	Importance       string `json:"importance"`        // 重要性级别，选填字段
+	Owner            string `json:"owner"`             // 资产负责人，选填字段
+	ConstructionUnit string `json:"construction_unit"` // 建设单位，选填字段
+	DevelopmentUnit  string `json:"development_unit"`  // 开发单位，选填字段
+	ResponsibleDept  string `json:"responsible_dept"`  // 负责部门，选填字段
+	Department       string `json:"department"`        // 所属部门，选填字段
+	Environment      string `json:"environment"`       // 所属环境，选填字段
+	MlpsLevel        string `json:"mlps_level"`        // 等保等级，选填字段
+	AssetGroupID     *uint  `json:"asset_group_id"`    // 所属资产组ID，可为空
+	Tags             string `json:"tags"`              // 资产标签，用逗号分隔
 }
 
 // AssetListRequest结构体定义获取资产列表的请求参数
 // 支持分页、关键词搜索和多种过滤条件
 type AssetListRequest struct {
-	Page         int    `form:"page" binding:"min=1"`              // 页码，最小值为1
-	PageSize     int    `form:"page_size" binding:"min=1,max=100"` // 每页数量，范围1-100
-	Keyword      string `form:"keyword"`                           // 关键词搜索，在多个字段中模糊匹配
-	Name         string `form:"name"`                              // 按资产名称过滤
-	Type         string `form:"type"`                              // 按资产类型过滤
-	Category     string `form:"category"`                          // 按资产分类过滤
-	Status       string `form:"status"`                            // 按资产状态过滤
-	Importance   string `form:"importance"`                        // 按重要性级别过滤
-	Owner        string `form:"owner"`                             // 按负责人过滤
-	Department   string `form:"department"`                        // 按部门过滤
-	ProjectID    *uint  `form:"project_id"`                        // 按项目ID过滤，可为空
-	AssetGroupID *uint  `form:"asset_group_id"`                    // 按资产组ID过滤，可为空
+	Page         int    `form:"page" binding:"min=1"`               // 页码，最小值为1
+	PageSize     int    `form:"page_size" binding:"min=1,max=1000"` // 每页数量，范围1-1000
+	Keyword      string `form:"keyword"`                            // 关键词搜索，在多个字段中模糊匹配
+	Name         string `form:"name"`                               // 按资产名称过滤
+	Type         string `form:"type"`                               // 按资产类型过滤
+	Category     string `form:"category"`                           // 按资产分类过滤
+	Status       string `form:"status"`                             // 按资产状态过滤
+	Importance   string `form:"importance"`                         // 按重要性级别过滤
+	Owner        string `form:"owner"`                              // 按负责人过滤
+	Department   string `form:"department"`                         // 按部门过滤
+	ProjectID    *uint  `form:"project_id"`                         // 按项目ID过滤，可为空
+	AssetGroupID *uint  `form:"asset_group_id"`                     // 按资产组ID过滤，可为空
 	// 权限控制字段
 	CurrentUserID   uint   `form:"-"` // 当前用户ID，用于权限控制
 	CurrentUserRole string `form:"-"` // 当前用户角色，用于权限控制
@@ -91,8 +99,6 @@ type AssetListResponse struct {
 	TotalPages  int            `json:"total_pages"`  // 总页数
 }
 
-
-
 // AssetExportRequest结构体定义批量导出资产的请求参数
 type AssetExportRequest struct {
 	AssetIDs  []uint `json:"asset_ids"`  // 要导出的资产ID列表
@@ -106,10 +112,10 @@ type AssetImportRequest struct {
 
 // AssetImportResult结构体定义批量导入的结果
 type AssetImportResult struct {
-	SuccessCount int      `json:"success_count"` // 成功导入的资产数量
-	FailureCount int      `json:"failure_count"` // 导入失败的资产数量
-	Errors       []string `json:"errors"`        // 错误信息列表
-	Assets       []models.Asset `json:"assets"`  // 成功导入的资产列表
+	SuccessCount int            `json:"success_count"` // 成功导入的资产数量
+	FailureCount int            `json:"failure_count"` // 导入失败的资产数量
+	Errors       []string       `json:"errors"`        // 错误信息列表
+	Assets       []models.Asset `json:"assets"`        // 成功导入的资产列表
 }
 
 // CreateAsset方法创建新的资产记录
@@ -157,22 +163,26 @@ func (s *AssetService) CreateAsset(req *AssetCreateRequest, createdBy uint) (*mo
 
 	// 构建资产对象
 	asset := models.Asset{
-		Name:         req.Name,         // 资产名称
-		Type:         req.Type,         // 资产类型
-		IP:           req.IP,           // IP地址
-		Port:         req.Port,         // 端口
-		Domain:       req.Domain,       // 域名
-		Description:  req.Description,  // 描述信息
-		OS:           req.OS,           // 操作系统
-		Status:       "active",         // 默认状态为活跃
-		Importance:   req.Importance,   // 重要性级别
-		Owner:        req.Owner,        // 负责人
-		Department:   req.Department,   // 所属部门
-		Environment:  req.Environment,  // 所属环境
-		ProjectID:    0,                // 项目ID，暂时设为0，后续会根据req.ProjectID设置
-		AssetGroupID: req.AssetGroupID, // 资产组ID
-		CreatedBy:    createdBy,        // 创建者ID
-		Tags:         req.Tags,         // 标签
+		Name:             req.Name,             // 资产名称
+		Type:             req.Type,             // 资产类型
+		IP:               req.IP,               // IP地址
+		Port:             req.Port,             // 端口
+		Domain:           req.Domain,           // 域名
+		Description:      req.Description,      // 描述信息
+		OS:               req.OS,               // 操作系统
+		Status:           "active",             // 默认状态为活跃
+		Importance:       req.Importance,       // 重要性级别
+		Owner:            req.Owner,            // 负责人
+		ConstructionUnit: req.ConstructionUnit, // 建设单位
+		DevelopmentUnit:  req.DevelopmentUnit,  // 开发单位
+		ResponsibleDept:  req.ResponsibleDept,  // 负责部门
+		Department:       req.Department,       // 所属部门
+		Environment:      req.Environment,      // 所属环境
+		MlpsLevel:        req.MlpsLevel,        // 等保等级
+		ProjectID:        0,                    // 项目ID，暂时设为0，后续会根据req.ProjectID设置
+		AssetGroupID:     req.AssetGroupID,     // 资产组ID
+		CreatedBy:        createdBy,            // 创建者ID
+		Tags:             req.Tags,             // 标签
 	}
 
 	// 设置项目ID（如果指定）
@@ -187,6 +197,7 @@ func (s *AssetService) CreateAsset(req *AssetCreateRequest, createdBy uint) (*mo
 
 	// 记录审计日志，追踪资产创建操作
 	s.addAuditLog(asset.ID, "create", "", "", createdBy, "", "")
+	(&SystemService{}).RecordOperation(createdBy, "asset", "create", asset.Name, "创建资产", "success", "", "")
 
 	// 重新查询资产信息，包含关联的项目、资产组、创建者等数据
 	db.Preload("Project").Preload("AssetGroup").Preload("Creator").Where("id = ?", asset.ID).First(&asset)
@@ -278,11 +289,23 @@ func (s *AssetService) UpdateAsset(assetID uint, req *AssetUpdateRequest, userID
 	if req.Owner != "" {
 		asset.Owner = req.Owner
 	}
+	if req.ConstructionUnit != "" {
+		asset.ConstructionUnit = req.ConstructionUnit
+	}
+	if req.DevelopmentUnit != "" {
+		asset.DevelopmentUnit = req.DevelopmentUnit
+	}
+	if req.ResponsibleDept != "" {
+		asset.ResponsibleDept = req.ResponsibleDept
+	}
 	if req.Department != "" {
 		asset.Department = req.Department
 	}
 	if req.Environment != "" {
 		asset.Environment = req.Environment
+	}
+	if req.MlpsLevel != "" {
+		asset.MlpsLevel = req.MlpsLevel
 	}
 	if req.Tags != "" {
 		asset.Tags = req.Tags
@@ -331,6 +354,7 @@ func (s *AssetService) DeleteAsset(assetID uint, userID uint, userRole string) e
 
 	// 记录审计日志
 	s.addAuditLog(assetID, "delete", "", "", userID, "", "")
+	(&SystemService{}).RecordOperation(userID, "asset", "delete", asset.Name, "删除资产", "success", "", "")
 
 	// 更新项目统计信息（如果资产属于某个项目）
 	if projectID != 0 {
@@ -578,8 +602,6 @@ func (s *AssetService) addAuditLog(assetID uint, action, before, after string, u
 	db.Create(&log)
 }
 
-
-
 // ExportAssetsToExcel 批量导出资产到Excel文件
 func (s *AssetService) ExportAssetsToExcel(assetIDs []uint, projectID uint, userID uint, userRole string) ([]byte, error) {
 	db := Init.GetDB()
@@ -725,10 +747,14 @@ func (s *AssetService) ExportAssetsToExcel(assetIDs []uint, projectID uint, user
 			asset.IP,
 			asset.Port,
 			asset.OS,
+			asset.ConstructionUnit,
+			asset.DevelopmentUnit,
+			asset.ResponsibleDept,
 			asset.Owner,
 			envLabel,
 			asset.Department,
 			importanceLabel,
+			asset.MlpsLevel,
 			asset.Tags,
 			asset.Description,
 			statusLabel,
@@ -827,31 +853,47 @@ func (s *AssetService) ImportAssetsFromExcel(file *multipart.FileHeader, project
 		ip := strings.TrimSpace(row[3])
 		port := strings.TrimSpace(row[4])
 		os := strings.TrimSpace(row[5])
+		constructionUnit := ""
+		developmentUnit := ""
+		responsibleDept := ""
 		owner := ""
 		environment := ""
 		department := ""
 		importance := ""
+		mlpsLevel := ""
 		tags := ""
 		description := ""
 
 		// 安全地获取可选列
 		if len(row) > 6 {
-			owner = strings.TrimSpace(row[6])
+			constructionUnit = strings.TrimSpace(row[6])
 		}
 		if len(row) > 7 {
-			environment = strings.TrimSpace(row[7])
+			developmentUnit = strings.TrimSpace(row[7])
 		}
 		if len(row) > 8 {
-			department = strings.TrimSpace(row[8])
+			responsibleDept = strings.TrimSpace(row[8])
 		}
 		if len(row) > 9 {
-			importance = strings.TrimSpace(row[9])
+			owner = strings.TrimSpace(row[9])
 		}
 		if len(row) > 10 {
-			tags = strings.TrimSpace(row[10])
+			environment = strings.TrimSpace(row[10])
 		}
 		if len(row) > 11 {
-			description = strings.TrimSpace(row[11])
+			department = strings.TrimSpace(row[11])
+		}
+		if len(row) > 12 {
+			importance = strings.TrimSpace(row[12])
+		}
+		if len(row) > 13 {
+			mlpsLevel = strings.TrimSpace(row[13])
+		}
+		if len(row) > 14 {
+			tags = strings.TrimSpace(row[14])
+		}
+		if len(row) > 15 {
+			description = strings.TrimSpace(row[15])
 		}
 
 		// 验证必填字段
@@ -909,6 +951,16 @@ func (s *AssetService) ImportAssetsFromExcel(file *multipart.FileHeader, project
 			importance = "medium" // 默认中等重要性
 		}
 
+		// 验证等保等级（如果提供）
+		if mlpsLevel != "" {
+			validMlpsLevels := []string{"一级", "二级", "三级", "四级", "五级"}
+			if !contains(validMlpsLevels, mlpsLevel) {
+				result.FailureCount++
+				result.Errors = append(result.Errors, fmt.Sprintf("第%d行：无效的等保等级 '%s'，有效值：%s", rowNum, mlpsLevel, strings.Join(validMlpsLevels, ", ")))
+				continue
+			}
+		}
+
 		// 检查资产名称是否已存在
 		var existAsset models.Asset
 		if err := db.Where("name = ? AND project_id = ?", assetName, projectID).First(&existAsset).Error; err == nil {
@@ -919,21 +971,25 @@ func (s *AssetService) ImportAssetsFromExcel(file *multipart.FileHeader, project
 
 		// 创建资产对象
 		asset := models.Asset{
-			Name:        assetName,
-			Type:        assetType,
-			Domain:      domain,
-			IP:          ip,
-			Port:        port,
-			OS:          os,
-			Owner:       owner,
-			Environment: environment,
-			Department:  department,
-			Importance:  importance,
-			ProjectID:   projectID,
-			CreatedBy:   userID,
-			Tags:        tags,
-			Description: description,
-			Status:      "active", // 默认状态为活跃
+			Name:             assetName,
+			Type:             assetType,
+			Domain:           domain,
+			IP:               ip,
+			Port:             port,
+			OS:               os,
+			ConstructionUnit: constructionUnit,
+			DevelopmentUnit:  developmentUnit,
+			ResponsibleDept:  responsibleDept,
+			Owner:            owner,
+			Environment:      environment,
+			Department:       department,
+			Importance:       importance,
+			MlpsLevel:        mlpsLevel,
+			ProjectID:        projectID,
+			CreatedBy:        userID,
+			Tags:             tags,
+			Description:      description,
+			Status:           "active", // 默认状态为活跃
 		}
 
 		// 保存资产到数据库
@@ -987,7 +1043,7 @@ func (s *AssetService) GenerateAssetImportTemplate() ([]byte, error) {
 	// 设置标题行
 	headers := []string{
 		"资产名称*", "资产类型*", "域名", "IP地址*", "端口*", "操作系统",
-		"负责人", "环境", "部门", "重要性", "标签", "描述",
+		"建设单位", "开发单位", "负责部门", "负责人", "环境", "部门", "资产等级", "等保等级", "标签", "描述",
 	}
 
 	// 写入标题行
@@ -1017,9 +1073,9 @@ func (s *AssetService) GenerateAssetImportTemplate() ([]byte, error) {
 
 	// 添加示例数据
 	exampleData := [][]interface{}{
-		{"Web服务器01", "server", "https://example.com", "192.168.1.100", "80,443", "CentOS 7", "张三", "production", "技术部", "high", "web,服务器", "主要的Web服务器"},
-		{"数据库服务器", "database", "", "192.168.1.101", "3306", "Ubuntu 20.04", "李四", "production", "技术部", "extremely_high", "数据库,MySQL", "核心业务数据库"},
-		{"测试服务器", "server", "", "192.168.1.102", "22,8080", "Windows Server 2019", "王五", "testing", "测试部", "medium", "测试", "用于功能测试的服务器"},
+		{"Web服务器01", "server", "https://example.com", "192.168.1.100", "80,443", "CentOS 7", "A建设单位", "A开发单位", "安全研发部", "张三", "production", "技术部", "high", "三级", "web,服务器", "主要的Web服务器"},
+		{"数据库服务器", "database", "", "192.168.1.101", "3306", "Ubuntu 20.04", "B建设单位", "B开发单位", "基础设施部", "李四", "production", "技术部", "extremely_high", "四级", "数据库,MySQL", "核心业务数据库"},
+		{"测试服务器", "server", "", "192.168.1.102", "22,8080", "Windows Server 2019", "C建设单位", "C开发单位", "测试保障部", "王五", "testing", "测试部", "medium", "二级", "测试", "用于功能测试的服务器"},
 	}
 
 	// 写入示例数据
@@ -1032,7 +1088,7 @@ func (s *AssetService) GenerateAssetImportTemplate() ([]byte, error) {
 	}
 
 	// 设置列宽
-	columnWidths := []float64{15, 12, 20, 15, 10, 15, 10, 12, 10, 10, 15, 25}
+	columnWidths := []float64{15, 12, 20, 15, 10, 15, 16, 16, 16, 10, 12, 10, 10, 10, 15, 25}
 	for i, width := range columnWidths {
 		col := fmt.Sprintf("%c", 'A'+i)
 		f.SetColWidth(sheetName, col, col, width)
@@ -1060,6 +1116,9 @@ func (s *AssetService) GenerateAssetImportTemplate() ([]byte, error) {
 		{"2. 可选字段："},
 		{"   - 域名：如果填写，必须包含http://或https://"},
 		{"   - 操作系统：如CentOS、Windows、Ubuntu等"},
+		{"   - 建设单位：资产所属建设单位"},
+		{"   - 开发单位：资产所属开发单位"},
+		{"   - 负责部门：负责资产运维/安全的部门"},
 		{"   - 负责人：资产负责人姓名"},
 		{"   - 环境：必须是以下值之一（如果填写）："},
 		{"     * production（生产环境）"},
@@ -1074,6 +1133,7 @@ func (s *AssetService) GenerateAssetImportTemplate() ([]byte, error) {
 		{"     * high（高）"},
 		{"     * medium（中）"},
 		{"     * low（低）"},
+		{"   - 等保等级：可选值：一级、二级、三级、四级、五级"},
 		{"   - 标签：多个标签用逗号分隔"},
 		{"   - 描述：资产的详细描述"},
 		{""},

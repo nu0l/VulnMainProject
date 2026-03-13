@@ -69,6 +69,11 @@ export default function Sidebar({ selectedKey = 'home', onSelect }: SidebarProps
           icon: <IconUserGroup />
         },
         {
+          itemKey: 'assets',
+          text: '资产面板',
+          icon: <IconSetting />
+        },
+        {
           itemKey: 'settings',
           text: '系统设置',
           icon: <IconSetting />

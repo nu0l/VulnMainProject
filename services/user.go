@@ -443,10 +443,10 @@ func (s *UserService) GetUserStats() (map[string]interface{}, error) {
 
 // UploadVulnImage 上传漏洞相关图片
 func (s *UserService) UploadVulnImage(userID uint, file *multipart.FileHeader, baseURL string) (string, error) {
-	// 创建上传目录
-	uploadDir := "uploads/vuln-images"
+	// 创建上传目录（基于可配置上传根目录，避免工作目录权限问题）
+	uploadDir := filepath.Join(Init.GetUploadRoot(), "vuln-images")
 	if err := os.MkdirAll(uploadDir, 0755); err != nil {
-		return "", errors.New("创建上传目录失败")
+		return "", fmt.Errorf("创建上传目录失败: %v", err)
 	}
 
 	// 生成唯一文件名
@@ -494,7 +494,6 @@ func (s *UserService) UploadVulnImage(userID uint, file *multipart.FileHeader, b
 
 	return imageURL, nil
 }
-
 
 // GetRoles 获取角色列表
 func (s *UserService) GetRoles() ([]models.Role, error) {
