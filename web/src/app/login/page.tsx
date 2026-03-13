@@ -67,7 +67,8 @@ export default function LoginPage() {
     try {
       const loginData: LoginRequest = {
         username: values.UserName.trim(),
-        password: values.PassWord
+        password: values.PassWord,
+        second_factor_code: values.SecondFactorCode?.trim() || undefined,
       };
 
       const response = await authApi.login(loginData);
@@ -413,6 +414,22 @@ export default function LoginPage() {
               }}
             />
           </div>
+
+
+          {/* 二次验证码（可选，开启MFA时必填） */}
+            <div style={{ marginBottom: isMobile ? '20px' : '22px', position: 'relative' }}>
+              <Form.Input
+                field="SecondFactorCode"
+                placeholder="二次验证码（TOTP/短信，可选）"
+                size="large"
+                style={{
+                  height: isMobile ? '48px' : '50px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: isMobile ? '10px' : '12px',
+                  backgroundColor: '#ffffff',
+                } as any}
+              />
+            </div>
 
           {/* 登录按钮 */}
           <Button

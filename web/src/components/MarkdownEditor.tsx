@@ -25,6 +25,7 @@ export default function MarkdownEditor({
   const [allowedTypes, setAllowedTypes] = useState<string[]>(['jpg', 'jpeg', 'png', 'gif']); // 默认允许的图片类型
   const [maxSize, setMaxSize] = useState<number>(5); // 默认5MB
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   // 获取系统上传配置
   useEffect(() => {
@@ -132,8 +133,63 @@ export default function MarkdownEditor({
     event.target.value = '';
   };
 
+  useEffect(() => {
+    const handlePaste = async (event: ClipboardEvent) => {
+      if (disabled || uploading) {
+        return;
+      }
+
+      const target = event.target as HTMLElement | null;
+      if (target && wrapperRef.current && !wrapperRef.current.contains(target)) {
+        return;
+      }
+
+      const items = event.clipboardData?.items;
+      if (!items) {
+        return;
+      }
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (!file) {
+            continue;
+          }
+
+          event.preventDefault();
+
+          const ext = (file.type.split('/')[1] || 'png').toLowerCase();
+          if (!allowedTypes.includes(ext)) {
+            Toast.error(`不支持粘贴该图片格式，支持：${allowedTypes.join(', ')}`);
+            return;
+          }
+
+          const maxSizeBytes = maxSize * 1024 * 1024;
+          if (file.size > maxSizeBytes) {
+            Toast.error(`图片大小不能超过${maxSize}MB`);
+            return;
+          }
+
+          const pastedFile = new File([file], `pasted-${Date.now()}.${ext}`, { type: file.type });
+          try {
+            const imageUrl = await handleImageUpload(pastedFile);
+            const imageMarkdown = `\n![粘贴图片](${imageUrl})\n`;
+            onChange?.((value || '') + imageMarkdown);
+          } catch (error) {
+            console.error('粘贴图片上传失败:', error);
+          }
+          return;
+        }
+      }
+    };
+
+    document.addEventListener('paste', handlePaste);
+    return () => document.removeEventListener('paste', handlePaste);
+  }, [allowedTypes, maxSize, disabled, uploading, onChange, value]);
+
   return (
-    <div style={{ position: 'relative' }}>
+    <div ref={wrapperRef} style={{ position: 'relative' }}>
       <MDEditor
         value={value}
         onChange={onChange}
