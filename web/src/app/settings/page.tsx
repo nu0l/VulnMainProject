@@ -29,7 +29,7 @@ import {
   IconUpload,
   IconUser
 } from '@douyinfe/semi-icons';
-import { systemApi, SystemConfig, ConfigUpdateRequest, weeklyReportApi, resolveImageUrl } from '@/lib/api';
+import { systemApi, SystemConfig, ConfigUpdateRequest, weeklyReportApi, resolveImageUrl, userApi } from '@/lib/api';
 import { notifyPasswordPolicyUpdated } from '@/utils/password';
 import { notifySystemInfoUpdated } from '@/utils/system';
 
@@ -73,6 +73,18 @@ const CONFIG_GROUPS = {
     icon: <IconUser />,
     key: 'ldap'
   },
+  webhook: {
+    title: 'Webhook 联动',
+    description: '配置钉钉/飞书/蓝信等Webhook告警矩阵',
+    icon: <IconMail />,
+    key: 'webhook'
+  },
+  ai: {
+    title: 'AI 修复建议',
+    description: '配置本地/远程LLM接入',
+    icon: <IconSetting />,
+    key: 'ai'
+  },
 };
 
 export default function SettingsPage() {
@@ -82,11 +94,15 @@ export default function SettingsPage() {
   const [testingEmail, setTestingEmail] = useState(false);
   const [testEmail, setTestEmail] = useState('');
   const [activeTab, setActiveTab] = useState('system');
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [loginBgFile, setLoginBgFile] = useState<File | null>(null);
 
   // 周报相关状态
   const [weeklyReports, setWeeklyReports] = useState<any[]>([]);
   const [weeklyReportLoading, setWeeklyReportLoading] = useState(false);
   const [generatingReport, setGeneratingReport] = useState(false);
+  const [monthlyReportData, setMonthlyReportData] = useState<any>(null);
+  const [yearlyReportData, setYearlyReportData] = useState<any>(null);
 
   // LDAP相关状态
   const [testingLDAP, setTestingLDAP] = useState(false);
@@ -266,6 +282,17 @@ export default function SettingsPage() {
 
       if (response.code === 200) {
         Toast.success('测试邮件发送成功，请检查邮箱');
+      } else {
+        Toast.error(response.msg || '测试邮件发送失败');
+      }
+    } catch (error: any) {
+      console.error('测试邮件失败:', error);
+      Toast.error(error.response?.data?.msg || '测试邮件发送失败');
+    } finally {
+      setTestingEmail(false);
+    }
+  };
+
   // 测试LDAP连接
   const testLDAP = async () => {
     try {
@@ -301,50 +328,27 @@ export default function SettingsPage() {
     }
   };
 
-      } else {
-        Toast.error(response.msg || '测试邮件发送失败');
-      }
-    } catch (error: any) {
-      console.error('测试邮件失败:', error);
-      Toast.error(error.response?.data?.msg || '测试邮件发送失败');
-    } finally {
-      setTestingEmail(false);
+  const handleUploadSystemImage = async (configKey: 'system.logo' | 'system.login_background', file: File | null) => {
+    if (!file) {
+      Toast.error('请先选择图片文件');
+      return;
     }
-  };
-
-
-  // 测试LDAP连接（组件级方法）
-  const testLDAP = async () => {
     try {
-      setTestingLDAP(true);
-      const response = await systemApi.testLDAPConfig();
-      if (response.code === 200) {
-        Toast.success('LDAP连接成功');
+      const uploadResp = await userApi.uploadVulnImage(file);
+      if (uploadResp.code !== 200 || !uploadResp.data?.image_url) {
+        Toast.error(uploadResp.msg || '图片上传失败');
+        return;
+      }
+      const relativePath = uploadResp.data.image_url.replace(/^https?:\/\/[^/]+/, '');
+      const updateResp = await systemApi.updateConfig(configKey, { value: relativePath });
+      if (updateResp.code === 200) {
+        Toast.success('图片配置更新成功');
+        await loadConfigs();
       } else {
-        Toast.error(response.msg || 'LDAP连接失败');
+        Toast.error(updateResp.msg || '更新配置失败');
       }
     } catch (error: any) {
-      Toast.error(error?.response?.data?.msg || 'LDAP连接失败');
-    } finally {
-      setTestingLDAP(false);
-    }
-  };
-
-  // 手动同步LDAP用户（组件级方法）
-  const syncLDAP = async () => {
-    try {
-      setSyncingLDAP(true);
-      const response = await systemApi.syncLDAPUsers();
-      if (response.code === 200) {
-        const data = response.data || { created: 0, updated: 0 };
-        Toast.success(`同步完成：新增${data.created}，更新${data.updated}`);
-      } else {
-        Toast.error(response.msg || '同步失败');
-      }
-    } catch (error: any) {
-      Toast.error(error?.response?.data?.msg || '同步失败');
-    } finally {
-      setSyncingLDAP(false);
+      Toast.error(error?.response?.data?.msg || '更新配置失败');
     }
   };
 
@@ -746,6 +750,29 @@ export default function SettingsPage() {
     }
   };
 
+
+  const loadMonthlyReportData = async () => {
+    try {
+      const response = await weeklyReportApi.getMonthlyReportData();
+      if (response.code === 200) {
+        setMonthlyReportData(response.data);
+      }
+    } catch (error) {
+      console.error('加载月报失败:', error);
+    }
+  };
+
+  const loadYearlyReportData = async () => {
+    try {
+      const response = await weeklyReportApi.getYearlyReportData();
+      if (response.code === 200) {
+        setYearlyReportData(response.data);
+      }
+    } catch (error) {
+      console.error('加载年报失败:', error);
+    }
+  };
+
   useEffect(() => {
     loadConfigs();
   }, []);
@@ -754,6 +781,8 @@ export default function SettingsPage() {
   useEffect(() => {
     if (activeTab === 'weekly-report') {
       loadWeeklyReports();
+      loadMonthlyReportData();
+      loadYearlyReportData();
     }
   }, [activeTab]);
 

@@ -295,3 +295,8 @@ func (s *SystemService) addOperationLog(userID uint, module, action, resource, d
 
 	db.Create(&log)
 }
+
+// RecordOperation 公开操作审计记录接口
+func (s *SystemService) RecordOperation(userID uint, module, action, resource, details, status, ip, userAgent string) {
+	s.addOperationLog(userID, module, action, resource, details, status, ip, userAgent)
+}

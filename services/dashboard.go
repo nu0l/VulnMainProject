@@ -15,6 +15,7 @@ type DashboardData struct {
 	// 基础统计
 	TotalVulns    int64 `json:"total_vulns"`    // 总漏洞数
 	TotalProjects int64 `json:"total_projects"` // 总项目数
+	TotalAssets   int64 `json:"total_assets"`   // 总资产数
 	DueSoonVulns  int64 `json:"due_soon_vulns"` // 即将到期漏洞数
 
 	// 漏洞状态统计
@@ -22,6 +23,9 @@ type DashboardData struct {
 
 	// 严重程度统计
 	SeverityStats map[string]int64 `json:"severity_stats"`
+
+	// 资产类型统计
+	AssetTypeStats map[string]int64 `json:"asset_type_stats"`
 
 	// 趋势数据（最近7天）
 	TrendData []TrendDataItem `json:"trend_data"`
@@ -39,9 +43,9 @@ type DashboardData struct {
 
 // TrendDataItem 趋势数据项
 type TrendDataItem struct {
-	Date        string `json:"date"`
-	NewVulns    int64  `json:"new_vulns"`
-	FixedVulns  int64  `json:"fixed_vulns"`
+	Date         string `json:"date"`
+	NewVulns     int64  `json:"new_vulns"`
+	FixedVulns   int64  `json:"fixed_vulns"`
 	PendingVulns int64  `json:"pending_vulns"`
 }
 
@@ -67,10 +71,10 @@ type VulnListItem struct {
 
 // UserVulnStats 用户漏洞统计
 type UserVulnStats struct {
-	TotalCount      int64            `json:"total_count"`       // 所有历史漏洞总数
-	MonthlyCount    int64            `json:"monthly_count"`     // 当月提交漏洞数
-	StatusStats     map[string]int64 `json:"status_stats"`
-	DueSoonCount    int64            `json:"due_soon_count"`
+	TotalCount   int64            `json:"total_count"`   // 所有历史漏洞总数
+	MonthlyCount int64            `json:"monthly_count"` // 当月提交漏洞数
+	StatusStats  map[string]int64 `json:"status_stats"`
+	DueSoonCount int64            `json:"due_soon_count"`
 }
 
 // GetDashboardData 获取仪表板数据
@@ -93,6 +97,7 @@ func (s *DashboardService) GetDashboardData(userID uint, roleCode string) (*Dash
 func (s *DashboardService) getSuperAdminDashboard(db *gorm.DB) (*DashboardData, error) {
 	data := &DashboardData{
 		VulnStatusStats: make(map[string]int64),
+		AssetTypeStats:  make(map[string]int64),
 	}
 
 	// 总漏洞数
@@ -100,6 +105,9 @@ func (s *DashboardService) getSuperAdminDashboard(db *gorm.DB) (*DashboardData, 
 
 	// 总项目数
 	db.Model(&models.Project{}).Where("status != ?", "archived").Count(&data.TotalProjects)
+
+	// 总资产数
+	db.Model(&models.Asset{}).Count(&data.TotalAssets)
 
 	// 即将到期漏洞数（7天内）
 	sevenDaysLater := time.Now().AddDate(0, 0, 7)
@@ -175,6 +183,15 @@ func (s *DashboardService) getSuperAdminDashboard(db *gorm.DB) (*DashboardData, 
 		Scan(&latestVulns)
 	data.LatestVulns = latestVulns
 
+	var superAssetTypeStats []struct {
+		Type  string
+		Count int64
+	}
+	db.Model(&models.Asset{}).Select("type, COUNT(*) as count").Group("type").Scan(&superAssetTypeStats)
+	for _, stat := range superAssetTypeStats {
+		data.AssetTypeStats[stat.Type] = stat.Count
+	}
+
 	return data, nil
 }
 
@@ -182,6 +199,7 @@ func (s *DashboardService) getSuperAdminDashboard(db *gorm.DB) (*DashboardData, 
 func (s *DashboardService) getSecurityEngineerDashboard(db *gorm.DB, userID uint) (*DashboardData, error) {
 	data := &DashboardData{
 		VulnStatusStats: make(map[string]int64),
+		AssetTypeStats:  make(map[string]int64),
 		CurrentUserVulns: &UserVulnStats{
 			StatusStats: make(map[string]int64),
 		},
@@ -268,6 +286,28 @@ func (s *DashboardService) getSecurityEngineerDashboard(db *gorm.DB, userID uint
 		Scan(&latestVulns)
 	data.LatestVulns = latestVulns
 
+	if len(projectIDs) > 0 {
+		db.Model(&models.Asset{}).Where("created_by = ? OR project_id IN (?)", userID, projectIDs).Count(&data.TotalAssets)
+		var secAssetTypeStats []struct {
+			Type  string
+			Count int64
+		}
+		db.Model(&models.Asset{}).Select("type, COUNT(*) as count").Where("created_by = ? OR project_id IN (?)", userID, projectIDs).Group("type").Scan(&secAssetTypeStats)
+		for _, stat := range secAssetTypeStats {
+			data.AssetTypeStats[stat.Type] = stat.Count
+		}
+	} else {
+		db.Model(&models.Asset{}).Where("created_by = ?", userID).Count(&data.TotalAssets)
+		var secAssetTypeStats []struct {
+			Type  string
+			Count int64
+		}
+		db.Model(&models.Asset{}).Select("type, COUNT(*) as count").Where("created_by = ?", userID).Group("type").Scan(&secAssetTypeStats)
+		for _, stat := range secAssetTypeStats {
+			data.AssetTypeStats[stat.Type] = stat.Count
+		}
+	}
+
 	return data, nil
 }
 
@@ -275,6 +315,7 @@ func (s *DashboardService) getSecurityEngineerDashboard(db *gorm.DB, userID uint
 func (s *DashboardService) getDevEngineerDashboard(db *gorm.DB, userID uint) (*DashboardData, error) {
 	data := &DashboardData{
 		VulnStatusStats: make(map[string]int64),
+		AssetTypeStats:  make(map[string]int64),
 		CurrentUserVulns: &UserVulnStats{
 			StatusStats: make(map[string]int64),
 		},
@@ -371,6 +412,18 @@ func (s *DashboardService) getDevEngineerDashboard(db *gorm.DB, userID uint) (*D
 		Scan(&latestVulns)
 	data.LatestVulns = latestVulns
 
+	if len(projectIDs) > 0 {
+		db.Model(&models.Asset{}).Where("project_id IN (?)", projectIDs).Count(&data.TotalAssets)
+		var devAssetTypeStats []struct {
+			Type  string
+			Count int64
+		}
+		db.Model(&models.Asset{}).Select("type, COUNT(*) as count").Where("project_id IN (?)", projectIDs).Group("type").Scan(&devAssetTypeStats)
+		for _, stat := range devAssetTypeStats {
+			data.AssetTypeStats[stat.Type] = stat.Count
+		}
+	}
+
 	return data, nil
 }
 
@@ -378,6 +431,7 @@ func (s *DashboardService) getDevEngineerDashboard(db *gorm.DB, userID uint) (*D
 func (s *DashboardService) getDefaultDashboard(db *gorm.DB) (*DashboardData, error) {
 	data := &DashboardData{
 		VulnStatusStats: make(map[string]int64),
+		AssetTypeStats:  make(map[string]int64),
 		LatestVulns:     []VulnListItem{},
 	}
 	return data, nil
