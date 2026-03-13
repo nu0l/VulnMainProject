@@ -22,6 +22,7 @@ func InitConfig() {
 	viper.SetDefault("datasource.username", "root")
 	viper.SetDefault("datasource.password", "")
 	viper.SetDefault("datasource.charset", "utf8mb4")
+	viper.SetDefault("upload.dir", "uploads")
 
 	// 允许通过环境变量覆盖配置
 	// 示例：DATASOURCE_HOST、SERVER_PORT
@@ -60,4 +61,23 @@ func InitConfig() {
 	if err != nil {
 		return
 	}
+}
+
+// GetUploadRoot 获取上传文件根目录（优先使用 upload.dir 配置）
+func GetUploadRoot() string {
+	uploadDir := viper.GetString("upload.dir")
+	if strings.TrimSpace(uploadDir) == "" {
+		uploadDir = "uploads"
+	}
+
+	if filepath.IsAbs(uploadDir) {
+		return uploadDir
+	}
+
+	workdir, err := os.Getwd()
+	if err != nil || workdir == "" {
+		return uploadDir
+	}
+
+	return filepath.Join(workdir, uploadDir)
 }

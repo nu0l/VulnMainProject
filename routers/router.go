@@ -3,7 +3,9 @@
 package routers
 
 import (
-	"net/http"             // 导入HTTP包，用于状态码
+	"net/http" // 导入HTTP包，用于状态码
+	"path/filepath"
+	Init "vulnmain/Init"
 	"vulnmain/middleware"  // 导入中间件包，使用认证和权限中间件
 	"vulnmain/routers/api" // 导入API接口包，注册具体的接口处理函数
 
@@ -51,10 +53,11 @@ func InitRouter(r *gin.Engine) *gin.Engine {
 	r.Use(CORSMiddleware())
 
 	// 静态文件服务 - 提供上传的文件访问
-	r.Static("/uploads", "./uploads")
+	uploadRoot := Init.GetUploadRoot()
+	r.Static("/uploads", uploadRoot)
 
 	// 专门为周报PDF文件提供静态访问
-	r.Static("/weekly-reports", "./uploads/weekly")
+	r.Static("/weekly-reports", filepath.Join(uploadRoot, "weekly"))
 
 	// 公开API组 - 不需要JWT认证的接口
 	// 这些接口可以匿名访问，主要用于用户登录和令牌刷新
