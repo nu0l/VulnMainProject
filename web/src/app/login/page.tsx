@@ -29,6 +29,11 @@ export default function LoginPage() {
     qrcode_enabled: false,
   });
 
+  const [assetVersion, setAssetVersion] = useState(Date.now());
+
+  const logoSrc = `${resolveImageUrl(systemInfo.logo || '/logo.png')}?v=${assetVersion}`;
+  const loginBgSrc = `${resolveImageUrl(systemInfo.login_background || '/login.jpg')}?v=${assetVersion}`;
+
   // 监听窗口大小变化
   useEffect(() => {
     const handleResize = () => {
@@ -50,6 +55,8 @@ export default function LoginPage() {
         const response = await systemApi.getPublicInfo();
         if (response.code === 200 && response.data) {
           setSystemInfo(response.data);
+          setLogoLoadFailed(false);
+          setAssetVersion(Date.now());
         }
       } catch (error) {
         console.error('获取系统信息失败:', error);
@@ -164,7 +171,7 @@ export default function LoginPage() {
         <div
           style={{
             width: isTablet ? '35%' : '40%',
-            backgroundImage: `url(${resolveImageUrl(systemInfo.login_background || '/login.jpg')})`,
+            backgroundImage: `url(${loginBgSrc})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
@@ -189,7 +196,7 @@ export default function LoginPage() {
             left: 0,
             right: 0,
             height: '35vh',
-            backgroundImage: `url(${resolveImageUrl(systemInfo.login_background || '/login.jpg')})`,
+            backgroundImage: `url(${loginBgSrc})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
@@ -323,7 +330,7 @@ export default function LoginPage() {
               }}>
                 {!logoLoadFailed ? (
                   <img
-                    src="/logo.png"
+                    src={logoSrc}
                     alt="系统Logo"
                     style={{
                       width: isMobile ? '24px' : (isTablet ? '28px' : '32px'),

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Button, Card, Space, Typography, TextArea, Select, Toast } from '@douyinfe/semi-ui';
+import { Button, Card, Typography, TextArea, Select, Toast, Divider } from '@douyinfe/semi-ui';
 import { vulnApi, type Vulnerability } from '@/lib/api';
 
 const { Title, Text } = Typography;
@@ -81,19 +81,22 @@ export default function RepeaterPage() {
       <Card title={<Title heading={4} style={{ margin: 0 }}>漏洞一键检测</Title>}>
         <Text type="secondary">先选择系统漏洞自动带入数据包，再发送请求查看响应与 HTML 渲染。</Text>
 
-        <div style={{ marginTop: 16, marginBottom: 12 }}>
+        <div style={{ marginTop: 16, marginBottom: 12, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
           <Select
             placeholder="请选择漏洞（自动加载请求数据包）"
             value={selectedVulnId}
             onChange={(v) => handleSelectVuln(v as number)}
-            style={{ width: 460 }}
+            style={{ width: 460, maxWidth: '100%' }}
             filter
           >
             {vulnOptions.map((v) => (
               <Select.Option key={v.id} value={v.id}>{v.title}</Select.Option>
             ))}
           </Select>
+          <Button theme="solid" type="primary" loading={loading} onClick={handleSend}>发送数据包</Button>
         </div>
+
+        <Divider margin="12px" />
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 16, alignItems: 'stretch' }}>
           <Card title="Request" style={{ height: '100%' }} bodyStyle={{ padding: 12, height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -104,9 +107,6 @@ export default function RepeaterPage() {
               placeholder={'GET /api/user?id=1 HTTP/1.1\nHost: example.com\nCookie: session=xxx'}
               autosize={{ minRows: 18, maxRows: 26 }}
             />
-            <Space style={{ marginTop: 12 }}>
-              <Button theme="solid" type="primary" loading={loading} onClick={handleSend}>发送请求</Button>
-            </Space>
           </Card>
 
           <Card title={`Response ${statusLine ? `(${statusLine})` : ''}`} style={{ height: '100%' }} bodyStyle={{ padding: 12, height: '100%', display: 'flex', flexDirection: 'column' }}>

@@ -15,14 +15,9 @@ export const resolveImageUrl = (imageUrl: string): string => {
     return imageUrl;
   }
   
-  // 如果是相对路径，拼接后端基础URL
-  if (imageUrl.startsWith('/uploads/')) {
-    return `${BACKEND_BASE_URL}${imageUrl}`;
-  }
-  
-  // 对于非 uploads 的根路径（如 /login.jpg），使用前端静态资源地址
+  // 如果是根路径资源（例如 /uploads/*、/logo.png、/login.jpg），统一走后端地址
   if (imageUrl.startsWith('/')) {
-    return imageUrl;
+    return `${BACKEND_BASE_URL}${imageUrl}`;
   }
   
   // 其他情况，假设是相对于uploads目录的路径
