@@ -68,6 +68,7 @@ export default function UsersPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const isAdmin = currentUser?.role_id === 1;
+  const canViewUsers = currentUser?.role_id === 1 || currentUser?.role_id === 5;
 
   // 密码验证状态
     const [createPasswordValidation, setCreatePasswordValidation] = useState<PasswordValidationResult | null>(null);
@@ -92,7 +93,7 @@ export default function UsersPage() {
 
     // 延迟一小段时间确保组件完全挂载
     const timer = setTimeout(() => {
-      if (user && user.role_id !== 1) {
+      if (user && user.role_id !== 1 && user.role_id !== 5) {
         // 非管理员用户直接重定向
         window.location.href = '/dashboard';
         return;
@@ -102,9 +103,11 @@ export default function UsersPage() {
       setAuthChecked(true);
 
       // 如果是管理员，加载数据
-      if (user && user.role_id === 1) {
+      if (user && (user.role_id === 1 || user.role_id === 5)) {
         loadUsers();
-        loadRoles();
+        if (user.role_id === 1) {
+          loadRoles();
+        }
       }
     }, 100);
 
@@ -343,7 +346,7 @@ export default function UsersPage() {
   };
 
   // 权限检查中或非管理员，显示加载状态
-  if (!authChecked || !currentUser || !isAdmin) {
+  if (!authChecked || !currentUser || !canViewUsers) {
     return (
       <div style={{
         display: 'flex',
@@ -431,7 +434,7 @@ export default function UsersPage() {
     {
       title: '操作',
       key: 'action',
-      render: (_: any, record: User) => (
+      render: (_: any, record: User) => isAdmin ? (
         <Space>
           <Button
             theme="borderless"
@@ -472,9 +475,9 @@ export default function UsersPage() {
             删除
           </Button>
         </Space>
-      ),
+      ) : <Text type="secondary">仅查看</Text>,
     },
-  ];
+ ];
 
   return (
     <div style={{ padding: '24px' }}>
@@ -498,14 +501,16 @@ export default function UsersPage() {
           >
             刷新
           </Button>
-        <Button
-          theme="solid"
-          type="primary"
-          icon={<IconPlus />}
+        {isAdmin && (
+          <Button
+            theme="solid"
+            type="primary"
+            icon={<IconPlus />}
             onClick={handleCreateUser}
-        >
-          新建用户
-        </Button>
+          >
+            新建用户
+          </Button>
+        )}
         </Space>
       </div>
 

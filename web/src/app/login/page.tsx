@@ -15,6 +15,7 @@ export default function LoginPage() {
   const [qrModalVisible, setQrModalVisible] = useState(false);
   const [qrLoading, setQrLoading] = useState(false);
   const [qrData, setQrData] = useState<{ session_id: string; qrcode_url: string } | null>(null);
+  const [logoLoadFailed, setLogoLoadFailed] = useState(false);
 
   const [systemInfo, setSystemInfo] = useState<SystemInfo>({
     system_name: 'VulnMain',
@@ -27,6 +28,11 @@ export default function LoginPage() {
     mfa_optional: true,
     qrcode_enabled: false,
   });
+
+  const [assetVersion, setAssetVersion] = useState(Date.now());
+
+  const logoSrc = `${resolveImageUrl(systemInfo.logo || '/logo.png')}?v=${assetVersion}`;
+  const loginBgSrc = `${resolveImageUrl(systemInfo.login_background || '/login.jpg')}?v=${assetVersion}`;
 
   // 监听窗口大小变化
   useEffect(() => {
@@ -49,6 +55,8 @@ export default function LoginPage() {
         const response = await systemApi.getPublicInfo();
         if (response.code === 200 && response.data) {
           setSystemInfo(response.data);
+          setLogoLoadFailed(false);
+          setAssetVersion(Date.now());
         }
       } catch (error) {
         console.error('获取系统信息失败:', error);
@@ -163,7 +171,7 @@ export default function LoginPage() {
         <div
           style={{
             width: isTablet ? '35%' : '40%',
-            backgroundImage: `url(${resolveImageUrl(systemInfo.login_background || '/login.jpg')})`,
+            backgroundImage: `url(${loginBgSrc})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
@@ -188,7 +196,7 @@ export default function LoginPage() {
             left: 0,
             right: 0,
             height: '35vh',
-            backgroundImage: `url(${resolveImageUrl(systemInfo.login_background || '/login.jpg')})`,
+            backgroundImage: `url(${loginBgSrc})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
@@ -320,10 +328,23 @@ export default function LoginPage() {
                 alignItems: 'center',
                 justifyContent: 'center'
               }}>
-                <svg width={isMobile ? "24" : (isTablet ? "28" : "32")} height={isMobile ? "24" : (isTablet ? "28" : "32")} viewBox="0 0 24 24" fill="none" style={{ color: 'white' }}>
-                  <path d="M12 2l2.09 6.26L22 9l-7.91.74L12 16l-2.09-6.26L2 9l7.91-.74L12 2z" fill="currentColor"/>
-                  <circle cx="12" cy="12" r="3" fill="currentColor" opacity="0.4"/>
-                </svg>
+                {!logoLoadFailed ? (
+                  <img
+                    src={logoSrc}
+                    alt="系统Logo"
+                    style={{
+                      width: isMobile ? '24px' : (isTablet ? '28px' : '32px'),
+                      height: isMobile ? '24px' : (isTablet ? '28px' : '32px'),
+                      objectFit: 'contain'
+                    }}
+                    onError={() => setLogoLoadFailed(true)}
+                  />
+                ) : (
+                  <svg width={isMobile ? "24" : (isTablet ? "28" : "32")} height={isMobile ? "24" : (isTablet ? "28" : "32")} viewBox="0 0 24 24" fill="none" style={{ color: 'white' }}>
+                    <path d="M12 2l2.09 6.26L22 9l-7.91.74L12 16l-2.09-6.26L2 9l7.91-.74L12 2z" fill="currentColor"/>
+                    <circle cx="12" cy="12" r="3" fill="currentColor" opacity="0.4"/>
+                  </svg>
+                )}
             </div>
           </div>
           

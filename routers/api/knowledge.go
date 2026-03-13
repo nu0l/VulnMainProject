@@ -73,3 +73,14 @@ func RecommendKnowledge(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"code": 200, "msg": "获取成功", "data": items})
 }
+
+func GetKnowledgeAlerts(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
+	data, err := knowledgeService.ListAlerts(page, pageSize)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "msg": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"code": 200, "msg": "获取成功", "data": data})
+}

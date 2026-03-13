@@ -28,22 +28,40 @@ export default function AssetAdminPage() {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [saving, setSaving] = useState(false);
+  const [currentUserRoleId, setCurrentUserRoleId] = useState<number | null>(null);
 
   useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        setCurrentUserRoleId(user.role_id);
+      } catch (error) {
+        // ignore
+      }
+    }
+
     const loadProjects = async () => {
-      const res = await projectApi.getProjectList({ page: 1, page_size: 200 });
+      const res = await projectApi.getProjectList({ page: 1, page_size: 100 });
       if (res.code === 200 && res.data) {
-        setProjects(res.data.projects || []);
+        const projectList = res.data.projects || [];
+        setProjects(projectList);
+        if (projectList.length > 0 && !selectedProjectId) {
+          setSelectedProjectId(projectList[0].id);
+        }
       }
     };
     loadProjects();
   }, []);
 
   const loadAssets = async () => {
-    if (!selectedProjectId) return;
     try {
       setLoading(true);
-      const res = await assetApi.getAssetList({ page: 1, page_size: 200, keyword: keyword || undefined, project_id: selectedProjectId });
+      const params: any = { page: 1, page_size: 100, keyword: keyword || undefined };
+      if (selectedProjectId) {
+        params.project_id = selectedProjectId;
+      }
+      const res = await assetApi.getAssetList(params);
       if (res.code === 200 && res.data) {
         setAssets(res.data.assets || []);
       }
@@ -163,10 +181,16 @@ export default function AssetAdminPage() {
           </Select>
           <Input value={keyword} onChange={setKeyword} placeholder="关键字（名称/IP/负责人）" style={{ width: 260 }} />
           <Button onClick={loadAssets}>查询</Button>
-          <Button theme="solid" type="primary" icon={<IconPlus />} onClick={() => { setEditingAsset(null); setModalVisible(true); }}>新增资产</Button>
+          {currentUserRoleId !== 5 && (
+            <Button theme="solid" type="primary" icon={<IconPlus />} onClick={() => { setEditingAsset(null); setModalVisible(true); }}>新增资产</Button>
+          )}
           <Button icon={<IconDownload />} onClick={handleDownloadTemplate}>下载导入模板</Button>
-          <input type="file" accept=".xlsx,.xls" onChange={(e) => setUploadFile(e.target.files?.[0] || null)} />
-          <Button theme="solid" type="secondary" icon={<IconUpload />} loading={importing} onClick={handleImport}>导入资产</Button>
+          {currentUserRoleId !== 5 && (
+            <>
+              <input type="file" accept=".xlsx,.xls" onChange={(e) => setUploadFile(e.target.files?.[0] || null)} />
+              <Button theme="solid" type="secondary" icon={<IconUpload />} loading={importing} onClick={handleImport}>导入资产</Button>
+            </>
+          )}
         </Space>
       </Card>
 
@@ -186,7 +210,9 @@ export default function AssetAdminPage() {
             { title: '等保等级', dataIndex: 'mlps_level' },
             {
               title: '操作',
-              render: (_: any, record: Asset) => (
+              render: (_: any, record: Asset) => currentUserRoleId === 5 ? (
+                <Text type="secondary">仅查看</Text>
+              ) : (
                 <Space>
                   <Button icon={<IconEdit />} size="small" onClick={() => { setEditingAsset(record); setModalVisible(true); }}>编辑</Button>
                   <Popconfirm title="确认删除该资产？" onConfirm={() => handleDelete(record)}>
@@ -199,6 +225,7 @@ export default function AssetAdminPage() {
         />
       </Card>
 
+      {currentUserRoleId !== 5 && (
       <Modal
         title={editingAsset ? '编辑资产' : '新增资产'}
         visible={modalVisible}
@@ -237,6 +264,7 @@ export default function AssetAdminPage() {
           </Space>
         </Form>
       </Modal>
+      )}
     </div>
   );
 }

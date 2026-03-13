@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	"io"
 	"mime/multipart"
 	"os"
 	"path/filepath"
@@ -442,7 +443,7 @@ func (s *UserService) GetUserStats() (map[string]interface{}, error) {
 }
 
 // UploadVulnImage 上传漏洞相关图片
-func (s *UserService) UploadVulnImage(userID uint, file *multipart.FileHeader, baseURL string) (string, error) {
+func (s *UserService) UploadVulnImage(userID uint, file *multipart.FileHeader, _ string, target string) (string, error) {
 	// 创建上传目录（基于可配置上传根目录，避免工作目录权限问题）
 	uploadDir := filepath.Join(Init.GetUploadRoot(), "vuln-images")
 	if err := os.MkdirAll(uploadDir, 0755); err != nil {
@@ -469,6 +470,12 @@ func (s *UserService) UploadVulnImage(userID uint, file *multipart.FileHeader, b
 	}
 
 	fileName := fmt.Sprintf("vuln_img_%d_%d%s", userID, time.Now().Unix(), fileExt)
+	if target == "logo" {
+		fileName = "logo.png"
+	}
+	if target == "login_background" {
+		fileName = "login.jpg"
+	}
 	filePath := filepath.Join(uploadDir, fileName)
 
 	// 保存文件
@@ -489,9 +496,28 @@ func (s *UserService) UploadVulnImage(userID uint, file *multipart.FileHeader, b
 		return "", errors.New("保存文件失败")
 	}
 
-	// 生成访问URL
-	imageURL := fmt.Sprintf("%s/uploads/vuln-images/%s", baseURL, fileName)
+	if target == "logo" || target == "login_background" {
+		publicDir := filepath.Join("web", "public")
+		if err := os.MkdirAll(publicDir, 0755); err == nil {
+			publicPath := filepath.Join(publicDir, fileName)
+			if srcFile, errOpen := os.Open(filePath); errOpen == nil {
+				defer srcFile.Close()
+				if dstFile, errCreate := os.Create(publicPath); errCreate == nil {
+					defer dstFile.Close()
+					_, _ = io.Copy(dstFile, srcFile)
+				}
+			}
+		}
+	}
 
+	// 生成访问URL
+	if target == "logo" {
+		return "/logo.png", nil
+	}
+	if target == "login_background" {
+		return "/login.jpg", nil
+	}
+	imageURL := fmt.Sprintf("/uploads/vuln-images/%s", fileName)
 	return imageURL, nil
 }
 

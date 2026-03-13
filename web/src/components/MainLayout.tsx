@@ -97,6 +97,10 @@ export default function MainLayout({ children }: MainLayoutProps) {
     } else if (pathname.startsWith('/assets')) {
       // 匹配 /assets 和 /assets/* 路径
       setSelectedKey('assets');
+    } else if (pathname.startsWith('/knowledge')) {
+      setSelectedKey('knowledge');
+    } else if (pathname.startsWith('/repeater')) {
+      setSelectedKey('repeater');
     } else {
       // 默认选中首页
       setSelectedKey('home');
@@ -123,6 +127,12 @@ export default function MainLayout({ children }: MainLayoutProps) {
         break;
       case 'assets':
         router.push('/assets');
+        break;
+      case 'knowledge':
+        router.push('/knowledge');
+        break;
+      case 'repeater':
+        router.push('/repeater');
         break;
       default:
         break;
