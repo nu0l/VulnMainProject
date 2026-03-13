@@ -3,9 +3,11 @@
 package init
 
 import (
+	"fmt"
 	"os" // 导入操作系统相关包，用于获取当前工作目录
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/spf13/viper" // 导入Viper配置管理包，用于处理配置文件
 )
@@ -99,10 +101,24 @@ func GetUploadRoot() string {
 			continue
 		}
 		seen[candidate] = struct{}{}
-		if err := os.MkdirAll(candidate, 0755); err == nil {
+		if err := ensureWritableDir(candidate); err == nil {
 			return candidate
 		}
 	}
 
+	_ = ensureWritableDir(fallback)
 	return fallback
+}
+
+// ensureWritableDir 确保目录存在且可写。
+func ensureWritableDir(dir string) error {
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+	probeFile := filepath.Join(dir, fmt.Sprintf(".write_probe_%d", time.Now().UnixNano()))
+	if err := os.WriteFile(probeFile, []byte("ok"), 0644); err != nil {
+		return err
+	}
+	_ = os.Remove(probeFile)
+	return nil
 }
