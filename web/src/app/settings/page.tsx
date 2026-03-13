@@ -278,6 +278,17 @@ export default function SettingsPage() {
 
       if (response.code === 200) {
         Toast.success('测试邮件发送成功，请检查邮箱');
+      } else {
+        Toast.error(response.msg || '测试邮件发送失败');
+      }
+    } catch (error: any) {
+      console.error('测试邮件失败:', error);
+      Toast.error(error.response?.data?.msg || '测试邮件发送失败');
+    } finally {
+      setTestingEmail(false);
+    }
+  };
+
   // 测试LDAP连接
   const testLDAP = async () => {
     try {
@@ -296,53 +307,6 @@ export default function SettingsPage() {
   };
 
   // 手动同步LDAP用户
-  const syncLDAP = async () => {
-    try {
-      setSyncingLDAP(true);
-      const response = await systemApi.syncLDAPUsers();
-      if (response.code === 200) {
-        const data = response.data || { created: 0, updated: 0 };
-        Toast.success(`同步完成：新增${data.created}，更新${data.updated}`);
-      } else {
-        Toast.error(response.msg || '同步失败');
-      }
-    } catch (error: any) {
-      Toast.error(error?.response?.data?.msg || '同步失败');
-    } finally {
-      setSyncingLDAP(false);
-    }
-  };
-
-      } else {
-        Toast.error(response.msg || '测试邮件发送失败');
-      }
-    } catch (error: any) {
-      console.error('测试邮件失败:', error);
-      Toast.error(error.response?.data?.msg || '测试邮件发送失败');
-    } finally {
-      setTestingEmail(false);
-    }
-  };
-
-
-  // 测试LDAP连接（组件级方法）
-  const testLDAP = async () => {
-    try {
-      setTestingLDAP(true);
-      const response = await systemApi.testLDAPConfig();
-      if (response.code === 200) {
-        Toast.success('LDAP连接成功');
-      } else {
-        Toast.error(response.msg || 'LDAP连接失败');
-      }
-    } catch (error: any) {
-      Toast.error(error?.response?.data?.msg || 'LDAP连接失败');
-    } finally {
-      setTestingLDAP(false);
-    }
-  };
-
-  // 手动同步LDAP用户（组件级方法）
   const syncLDAP = async () => {
     try {
       setSyncingLDAP(true);
