@@ -227,8 +227,17 @@ func (s *ProjectService) GetProject(projectID, userID uint, roleCode string) (*P
 
 	// 如果不是超级管理员，需要检查权限
 	if roleCode != "super_admin" && roleCode != "leader" {
-		query = query.Where("id = ? AND (is_public = ? OR owner_id = ? OR id IN (SELECT project_id FROM project_members WHERE user_id = ?))",
-			projectID, true, userID, userID)
+		accessCond := "id = ? AND (is_public = ? OR owner_id = ? OR id IN (SELECT project_id FROM project_members WHERE user_id = ?))"
+		args := []interface{}{projectID, true, userID, userID}
+		if roleCode == "dev_engineer" {
+			accessCond += " OR id IN (SELECT project_id FROM vulnerabilities WHERE assignee_id = ?)"
+			args = append(args, userID)
+		}
+		if roleCode == "security_engineer" {
+			accessCond += " OR id IN (SELECT project_id FROM vulnerabilities WHERE reporter_id = ?)"
+			args = append(args, userID)
+		}
+		query = query.Where(accessCond, args...)
 	}
 
 	if err := query.First(&project, projectID).Error; err != nil {
@@ -253,6 +262,14 @@ func (s *ProjectService) GetProject(projectID, userID uint, roleCode string) (*P
 			var memberCount int64
 			db.Model(&models.ProjectMember{}).Where("project_id = ? AND user_id = ?", projectID, userID).Count(&memberCount)
 			if memberCount > 0 {
+				hasAccess = true
+			}
+		}
+
+		if !hasAccess && roleCode == "dev_engineer" {
+			var assignedCount int64
+			db.Model(&models.Vulnerability{}).Where("project_id = ? AND assignee_id = ?", projectID, userID).Count(&assignedCount)
+			if assignedCount > 0 {
 				hasAccess = true
 			}
 		}
@@ -653,8 +670,17 @@ func (s *ProjectService) GetProjectMembers(projectID, userID uint, roleCode stri
 	var project models.Project
 	query := db
 	if roleCode != "super_admin" && roleCode != "leader" {
-		query = query.Where("id = ? AND (is_public = ? OR owner_id = ? OR id IN (SELECT project_id FROM project_members WHERE user_id = ?))",
-			projectID, true, userID, userID)
+		accessCond := "id = ? AND (is_public = ? OR owner_id = ? OR id IN (SELECT project_id FROM project_members WHERE user_id = ?))"
+		args := []interface{}{projectID, true, userID, userID}
+		if roleCode == "dev_engineer" {
+			accessCond += " OR id IN (SELECT project_id FROM vulnerabilities WHERE assignee_id = ?)"
+			args = append(args, userID)
+		}
+		if roleCode == "security_engineer" {
+			accessCond += " OR id IN (SELECT project_id FROM vulnerabilities WHERE reporter_id = ?)"
+			args = append(args, userID)
+		}
+		query = query.Where(accessCond, args...)
 	}
 
 	if err := query.First(&project, projectID).Error; err != nil {
@@ -682,8 +708,17 @@ func (s *ProjectService) GetUserProjects(userID uint, roleCode string) ([]*Proje
 		query = query.Order("created_at DESC").Find(&projects)
 	} else {
 		// 其他角色只能看到自己相关的项目
-		query = query.Where("is_public = ? OR owner_id = ? OR id IN (SELECT project_id FROM project_members WHERE user_id = ?)",
-			true, userID, userID).Order("created_at DESC").Find(&projects)
+		accessCond := "is_public = ? OR owner_id = ? OR id IN (SELECT project_id FROM project_members WHERE user_id = ?)"
+		args := []interface{}{true, userID, userID}
+		if roleCode == "dev_engineer" {
+			accessCond += " OR id IN (SELECT project_id FROM vulnerabilities WHERE assignee_id = ?)"
+			args = append(args, userID)
+		}
+		if roleCode == "security_engineer" {
+			accessCond += " OR id IN (SELECT project_id FROM vulnerabilities WHERE reporter_id = ?)"
+			args = append(args, userID)
+		}
+		query = query.Where(accessCond, args...).Order("created_at DESC").Find(&projects)
 	}
 
 	if err := query.Error; err != nil {
