@@ -226,7 +226,7 @@ func (s *ProjectService) GetProject(projectID, userID uint, roleCode string) (*P
 	query := db.Preload("Owner").Preload("Members").Preload("Members.User").Preload("Creator")
 
 	// 如果不是超级管理员，需要检查权限
-	if roleCode != "super_admin" {
+	if roleCode != "super_admin" && roleCode != "leader" {
 		query = query.Where("id = ? AND (is_public = ? OR owner_id = ? OR id IN (SELECT project_id FROM project_members WHERE user_id = ?))",
 			projectID, true, userID, userID)
 	}
@@ -240,7 +240,7 @@ func (s *ProjectService) GetProject(projectID, userID uint, roleCode string) (*P
 	assetQuery := db.Preload("Project").Preload("AssetGroup").Preload("Creator").Where("project_id = ?", projectID)
 
 	// 如果不是超级管理员，需要检查用户是否有项目权限
-	if roleCode != "super_admin" {
+	if roleCode != "super_admin" && roleCode != "leader" {
 		hasAccess := false
 
 		// 检查是否是项目负责人
@@ -277,7 +277,7 @@ func (s *ProjectService) GetProject(projectID, userID uint, roleCode string) (*P
 	vulnQuery := db.Preload("Asset").Preload("Project").Preload("Reporter").Preload("Assignee").Where("project_id = ?", projectID)
 
 	// 应用相同的权限控制逻辑
-	if roleCode != "super_admin" {
+	if roleCode != "super_admin" && roleCode != "leader" {
 		hasAccess := false
 
 		// 检查是否是项目负责人
@@ -408,10 +408,15 @@ func (s *ProjectService) GetProjectList(req *ProjectListRequest) (*ProjectListRe
 func (s *ProjectService) UpdateProject(projectID uint, req *UpdateProjectRequest, userID uint, roleCode string) (*ProjectResponse, error) {
 	db := Init.GetDB()
 
+	// 领导角色仅允许只读访问
+	if roleCode == "leader" {
+		return nil, errors.New("领导角色仅支持查看，不允许修改项目")
+	}
+
 	// 检查项目是否存在和权限
 	var project models.Project
 	query := db.Preload("Members")
-	if roleCode != "super_admin" {
+	if roleCode != "super_admin" && roleCode != "leader" {
 		query = query.Where("id = ? AND (owner_id = ? OR created_by = ?)", projectID, userID, userID)
 	}
 
@@ -590,7 +595,7 @@ func (s *ProjectService) DeleteProject(projectID, userID uint, roleCode string) 
 	db := Init.GetDB()
 
 	// 检查项目是否存在和权限（只有超级管理员可以删除项目）
-	if roleCode != "super_admin" {
+	if roleCode != "super_admin" && roleCode != "leader" {
 		return errors.New("只有超级管理员可以删除项目")
 	}
 
@@ -647,7 +652,7 @@ func (s *ProjectService) GetProjectMembers(projectID, userID uint, roleCode stri
 	// 检查项目权限
 	var project models.Project
 	query := db
-	if roleCode != "super_admin" {
+	if roleCode != "super_admin" && roleCode != "leader" {
 		query = query.Where("id = ? AND (is_public = ? OR owner_id = ? OR id IN (SELECT project_id FROM project_members WHERE user_id = ?))",
 			projectID, true, userID, userID)
 	}
@@ -672,7 +677,7 @@ func (s *ProjectService) GetUserProjects(userID uint, roleCode string) ([]*Proje
 	var projects []models.Project
 	query := db.Preload("Owner").Preload("Creator").Preload("Members").Preload("Members.User")
 
-	if roleCode == "super_admin" {
+	if roleCode == "super_admin" || roleCode == "leader" {
 		// 超级管理员可以看到所有项目
 		query = query.Order("created_at DESC").Find(&projects)
 	} else {

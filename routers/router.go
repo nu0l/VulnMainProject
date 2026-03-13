@@ -144,6 +144,7 @@ func InitRouter(r *gin.Engine) *gin.Engine {
 			vulnViewAPI.GET("/:id", api.GetVuln)                                // 获取漏洞详情
 			vulnViewAPI.GET("/:id/timeline", api.GetVulnTimeline)               // 获取漏洞时间线
 			vulnViewAPI.GET("/:id/recommend-fixes", api.RecommendFixStrategies) // 推荐历史修复策略
+			vulnViewAPI.POST("/replay", api.ReplayVulnRequest)                  // 重放漏洞请求数据包
 			vulnViewAPI.GET("/compliance/export", api.ExportComplianceReport)   // 导出合规模板报告
 			vulnViewAPI.POST("/export", api.ExportVulns)                        // 批量导出漏洞
 			vulnViewAPI.GET("/import/template", api.DownloadVulnTemplate)       // 下载漏洞导入模板

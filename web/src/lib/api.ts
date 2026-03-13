@@ -842,6 +842,7 @@ export interface Vulnerability {
   status: string;
   cve_id?: string;
   fix_suggestion?: string;
+  request_packet?: string;
   project_id: number;
   project: Project;
   asset_id: number;
@@ -898,6 +899,16 @@ export interface VulnTimeline {
   created_at: string;
 }
 
+
+export interface VulnListResponseData {
+  vulns: Vulnerability[];
+  vulnerabilities: Vulnerability[];
+  total: number;
+  page: number;
+  page_size: number;
+  current_page: number;
+  total_pages: number;
+}
 // 项目类型枚举
 export const PROJECT_TYPES = [
   { value: 'web_project', label: 'Web项目' },
@@ -1017,6 +1028,7 @@ export interface VulnCreateRequest {
   severity: string;
   cve_id?: string;
   fix_suggestion: string; // 修复建议改为必填
+  request_packet: string; // 原始请求数据包必填
   project_id: number;
   asset_id: number;
   assignee_id: number; // 指派给改为必填
@@ -1033,6 +1045,7 @@ export interface VulnUpdateRequest {
   severity?: string;
   cve_id?: string;
   fix_suggestion?: string;
+  request_packet?: string;
   asset_id?: number;
   assignee_id?: number;
   fix_deadline?: string;
@@ -1091,6 +1104,12 @@ export const vulnApi = {
     return response.data;
   },
 
+  // 获取漏洞列表
+  getVulnList: async (params?: { page?: number; page_size?: number; keyword?: string; project_id?: number; severity?: string; status?: string }): Promise<ApiResponse<VulnListResponseData>> => {
+    const response = await api.get('/vulns', { params });
+    return response.data;
+  },
+
   // 获取漏洞详情
   getVuln: async (id: number): Promise<ApiResponse<Vulnerability>> => {
     const response = await api.get(`/vulns/${id}`);
@@ -1142,6 +1161,12 @@ export const vulnApi = {
   // 忽略漏洞
   ignoreVuln: async (id: number, reason: string): Promise<ApiResponse> => {
     const response = await api.put(`/vulns/${id}/ignore`, { ignore_reason: reason });
+    return response.data;
+  },
+
+  // 漏洞请求重放
+  replayRequestPacket: async (request_packet: string): Promise<ApiResponse<{ status_line: string; headers: Record<string, string>; body: string; content_type: string }>> => {
+    const response = await api.post('/vulns/replay', { request_packet });
     return response.data;
   },
 
