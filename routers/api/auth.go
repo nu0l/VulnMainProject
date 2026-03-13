@@ -51,6 +51,33 @@ func Login(c *gin.Context) {
 	})
 }
 
+// StartQrLogin 启动扫码登录
+func StartQrLogin(c *gin.Context) {
+	resp, err := authService.StartQrLogin()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "msg": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"code": 200, "msg": "获取成功", "data": resp})
+}
+
+// QrLoginCallback 扫码登录回调（可用于第三方API对接）
+func QrLoginCallback(c *gin.Context) {
+	var req services.QrLoginCallbackRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "msg": "参数错误: " + err.Error()})
+		return
+	}
+
+	resp, err := authService.QrLoginCallback(&req)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "msg": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"code": 200, "msg": "扫码登录成功", "data": resp})
+}
+
 // RefreshToken函数处理JWT令牌刷新请求
 // POST /api/refresh
 // 当访问令牌即将过期时，使用此接口获取新的访问令牌

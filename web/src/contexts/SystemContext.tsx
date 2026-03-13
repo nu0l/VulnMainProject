@@ -37,7 +37,10 @@ export function SystemProvider({ children }: SystemProviderProps) {
         system_title: '漏洞管理平台',
         company_name: '漏洞管理平台',
         logo: '',
-        version: '1.0.0'
+        login_background: '/login.jpg',
+        version: '1.0.0',
+        mfa_enabled: false,
+        mfa_optional: true,
       };
       setSystemInfo(defaultInfo);
       document.title = 'VulnMain - 漏洞管理平台';
