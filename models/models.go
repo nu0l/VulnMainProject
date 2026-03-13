@@ -223,11 +223,11 @@ func InitDefaultData() error {
 	// 为领导角色分配权限（除系统设置外）
 	leaderPermissions := []string{
 		"dashboard:view",
-		"project:view", "project:create", "project:edit", "project:delete",
-		"user:view", "user:create", "user:edit", "user:delete", "user:reset_password",
-		"vuln:view", "vuln:create", "vuln:edit", "vuln:assign", "vuln:retest", "vuln:fix", "vuln:ignore", "vuln:change_status",
-		"asset:view", "asset:create", "asset:edit", "asset:delete",
-		"knowledge:view", "knowledge:edit",
+		"project:view",
+		"user:view",
+		"vuln:view",
+		"asset:view",
+		"knowledge:view",
 	}
 	assignRolePermissions("leader", leaderPermissions)
 
@@ -294,6 +294,10 @@ func InitDefaultData() error {
 		{Key: "password.require_special", Value: "false", Type: "bool", Group: "password", Description: "密码需要包含特殊字符", IsPublic: false},
 		{Key: "upload.max_size", Value: "10", Type: "int", Group: "upload", Description: "文件上传最大大小(MB)", IsPublic: true},
 		{Key: "upload.allowed_types", Value: "jpg,jpeg,png", Type: "string", Group: "upload", Description: "允许上传的文件类型", IsPublic: true},
+
+		// 漏洞预警订阅配置
+		{Key: "knowledge.alert_enabled", Value: "false", Type: "bool", Group: "knowledge_alert", Description: "启用漏洞预警订阅", IsPublic: true},
+		{Key: "knowledge.alert_feeds", Value: "[]", Type: "json", Group: "knowledge_alert", Description: "漏洞预警列表(JSON数组: title,severity,source,publish_at,link,summary)", IsPublic: false},
 
 		// Webhook 联动告警配置
 		{Key: "webhook.enabled", Value: "false", Type: "bool", Group: "webhook", Description: "启用Webhook联动告警", IsPublic: false},

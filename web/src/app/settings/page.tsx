@@ -85,6 +85,12 @@ const CONFIG_GROUPS = {
     icon: <IconSetting />,
     key: 'ai'
   },
+  knowledge_alert: {
+    title: '漏洞预警订阅',
+    description: '配置知识库页面展示的外部漏洞预警信息',
+    icon: <IconMail />,
+    key: 'knowledge_alert'
+  },
 };
 
 export default function SettingsPage() {
@@ -334,7 +340,7 @@ export default function SettingsPage() {
       return;
     }
     try {
-      const uploadResp = await userApi.uploadVulnImage(file);
+      const uploadResp = await userApi.uploadVulnImage(file, configKey === 'system.logo' ? 'logo' : 'login_background');
       if (uploadResp.code !== 200 || !uploadResp.data?.image_url) {
         Toast.error(uploadResp.msg || '图片上传失败');
         return;
