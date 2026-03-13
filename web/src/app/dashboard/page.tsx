@@ -174,6 +174,17 @@ export default function DashboardPage() {
     }
   };
 
+  const getAssetTypeDisplayName = (type: string): string => {
+    const map: Record<string, string> = {
+      server: '服务器',
+      network_device: '网络设备',
+      database: '数据库',
+      storage_device: '存储设备',
+      custom: '自定义',
+    };
+    return map[type] || type;
+  };
+
   // 统计卡片组件
   const StatCard = ({ title, value, icon }: { title: string; value: number; icon: React.ReactNode }) => (
     <Card>
@@ -343,6 +354,24 @@ export default function DashboardPage() {
       }
     };
 
+    const assetTypeChartData = Object.entries(dashboardData.asset_type_stats || {}).map(([type, count]) => ({
+      type: getAssetTypeDisplayName(type),
+      count,
+    }));
+
+    const assetTypeBarSpec = {
+      type: 'bar' as const,
+      data: [{ id: 'data', values: assetTypeChartData }],
+      xField: 'type',
+      yField: 'count',
+      title: { visible: true, text: '资产类型分布' },
+      axes: [
+        { orient: 'bottom' as const, type: 'band' as const },
+        { orient: 'left' as const, type: 'linear' as const }
+      ],
+      bar: { style: { fill: '#13c2c2' } }
+    };
+
     // 折线图配置
     const lineSpec = {
       type: 'line' as const,
@@ -430,6 +459,11 @@ export default function DashboardPage() {
             value={dashboardData.due_soon_vulns}
             icon={<IconAt style={{ color: 'var(--semi-color-warning)', fontSize: '24px' }} />}
           />
+          <StatCard
+            title="资产总数"
+            value={dashboardData.total_assets || 0}
+            icon={<IconSafe style={{ color: 'var(--semi-color-success)', fontSize: '24px' }} />}
+          />
         </div>
 
         {/* 图表区域 */}
@@ -446,6 +480,12 @@ export default function DashboardPage() {
             </div>
           </Card>
         </div>
+
+        <Card title="资产数量图表" headerStyle={{ padding: '16px 24px' }}>
+          <div style={{ height: '280px' }}>
+            <VChart spec={assetTypeBarSpec} />
+          </div>
+        </Card>
 
         {/* 趋势图 */}
         <Card title="漏洞趋势分析" headerStyle={{ padding: '16px 24px' }}>
@@ -1142,6 +1182,20 @@ export default function DashboardPage() {
           </Card>
         )}
 
+        <Card title="资产数量图表" headerStyle={{ padding: '16px 24px' }}>
+          <div style={{ height: '260px' }}>
+            <VChart
+              spec={{
+                type: 'bar',
+                data: [{ id: 'data', values: Object.entries(dashboardData.asset_type_stats || {}).map(([type, count]) => ({ type: getAssetTypeDisplayName(type), count })) }],
+                xField: 'type',
+                yField: 'count',
+                axes: [{ orient: 'bottom', type: 'band' }, { orient: 'left', type: 'linear' }],
+              } as any}
+            />
+          </div>
+        </Card>
+
         {/* 研发工程师排行榜 */}
         <Card title="研发工程师排行榜（当月修复完成漏洞数）" headerStyle={{ padding: '16px 24px' }}>
           <List
@@ -1164,6 +1218,20 @@ export default function DashboardPage() {
               />
             )}
           />
+        </Card>
+
+        <Card title="资产数量图表" headerStyle={{ padding: '16px 24px' }}>
+          <div style={{ height: '260px' }}>
+            <VChart
+              spec={{
+                type: 'bar',
+                data: [{ id: 'data', values: Object.entries(dashboardData.asset_type_stats || {}).map(([type, count]) => ({ type: getAssetTypeDisplayName(type), count })) }],
+                xField: 'type',
+                yField: 'count',
+                axes: [{ orient: 'bottom', type: 'band' }, { orient: 'left', type: 'linear' }],
+              } as any}
+            />
+          </div>
         </Card>
 
         {/* 项目最新漏洞 */}

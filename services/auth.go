@@ -212,6 +212,9 @@ func (s *AuthService) verifySecondFactor(code string) error {
 		return nil
 	}
 	if strings.TrimSpace(code) == "" {
+		if get("auth.mfa.optional", "true") == "true" {
+			return nil
+		}
 		return errors.New("请填写二次验证码")
 	}
 	method := get("auth.mfa.method", "totp")

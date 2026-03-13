@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Form, Button, Toast, Typography } from '@douyinfe/semi-ui';
 import { IconUser, IconLock, IconEyeOpened, IconEyeClosed } from '@douyinfe/semi-icons';
-import { authApi, authUtils, systemApi, type LoginRequest, type SystemInfo } from '@/lib/api';
+import { authApi, authUtils, systemApi, resolveImageUrl, type LoginRequest, type SystemInfo } from '@/lib/api';
 
 const { Title, Text } = Typography;
 
@@ -14,9 +14,13 @@ export default function LoginPage() {
   const [isTablet, setIsTablet] = useState(false);
   const [systemInfo, setSystemInfo] = useState<SystemInfo>({
     system_name: 'VulnMain',
+    system_title: '漏洞管理平台',
     company_name: 'xxxxxx科技有限公司',
     logo: '',
-    version: '1.0.0'
+    login_background: '/login.jpg',
+    version: '1.0.0',
+    mfa_enabled: false,
+    mfa_optional: true,
   });
 
   // 监听窗口大小变化
@@ -110,7 +114,7 @@ export default function LoginPage() {
         <div
           style={{
             width: isTablet ? '35%' : '40%',
-            backgroundImage: 'url("/login.jpg")',
+            backgroundImage: `url(${resolveImageUrl(systemInfo.login_background || '/login.jpg')})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
@@ -135,7 +139,7 @@ export default function LoginPage() {
             left: 0,
             right: 0,
             height: '35vh',
-            backgroundImage: 'url("/login.jpg")',
+            backgroundImage: `url(${resolveImageUrl(systemInfo.login_background || '/login.jpg')})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',

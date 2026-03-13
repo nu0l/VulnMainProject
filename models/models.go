@@ -257,6 +257,8 @@ func InitDefaultData() error {
 		{Key: "system.name", Value: "VulnMain", Type: "string", Group: "system", Description: "系统名称", IsPublic: true},
 		{Key: "system.company_name", Value: "xxxxxx科技有限公司", Type: "string", Group: "system", Description: "公司名称", IsPublic: true},
 		{Key: "system.title", Value: "漏洞管理平台", Type: "string", Group: "system", Description: "系统标题", IsPublic: true},
+		{Key: "system.logo", Value: "", Type: "string", Group: "system", Description: "系统Logo地址", IsPublic: true},
+		{Key: "system.login_background", Value: "/login.jpg", Type: "string", Group: "system", Description: "登录背景图地址", IsPublic: true},
 
 		// 认证配置
 		{Key: "auth.jwt.secret", Value: secret, Type: "string", Group: "auth", Description: "JWT密钥", IsPublic: false},
@@ -294,6 +296,7 @@ func InitDefaultData() error {
 
 		// 多因子认证配置
 		{Key: "auth.mfa.enabled", Value: "false", Type: "bool", Group: "auth", Description: "启用登录二次验证", IsPublic: false},
+		{Key: "auth.mfa.optional", Value: "true", Type: "bool", Group: "auth", Description: "二次验证可选(开启后可不填验证码)", IsPublic: false},
 		{Key: "auth.mfa.method", Value: "totp", Type: "string", Group: "auth", Description: "二次验证方式: totp/sms", IsPublic: false},
 		{Key: "auth.mfa.totp_secret", Value: "", Type: "string", Group: "auth", Description: "TOTP共享密钥(Base32)", IsPublic: false},
 		{Key: "auth.mfa.sms_mock_code", Value: "123456", Type: "string", Group: "auth", Description: "短信验证码(测试环境)", IsPublic: false},

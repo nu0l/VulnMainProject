@@ -106,7 +106,10 @@ export interface SystemInfo {
   system_title: string;
   company_name: string;
   logo: string;
+  login_background?: string;
   version: string;
+  mfa_enabled?: boolean;
+  mfa_optional?: boolean;
 }
 
 // 系统配置接口
@@ -240,8 +243,10 @@ export const authApi = {
 export interface DashboardData {
   total_vulns: number;
   total_projects: number;
+  total_assets?: number;
   due_soon_vulns: number;
   vuln_status_stats: Record<string, number>;
+  asset_type_stats?: Record<string, number>;
   security_engineer_ranking?: EngineerRankingItem[];
   dev_engineer_ranking?: EngineerRankingItem[];
   latest_vulns: VulnListItem[];
@@ -755,6 +760,15 @@ export interface Asset {
   updated_at: string;
 }
 
+export interface AssetListResponse {
+  assets: Asset[];
+  total: number;
+  page: number;
+  page_size: number;
+  current_page: number;
+  total_pages: number;
+}
+
 // 漏洞类型定义
 export interface Vulnerability {
   id: number;
@@ -1133,6 +1147,17 @@ export const assetApi = {
   // 获取项目资产列表
   getProjectAssets: async (projectId: number): Promise<ApiResponse<Asset[]>> => {
     const response = await api.get(`/projects/${projectId}/assets`);
+    return response.data;
+  },
+
+  // 获取资产列表（支持分页/过滤）
+  getAssetList: async (params?: {
+    page?: number;
+    page_size?: number;
+    keyword?: string;
+    project_id?: number;
+  }): Promise<ApiResponse<AssetListResponse>> => {
+    const response = await api.get('/assets', { params });
     return response.data;
   },
 

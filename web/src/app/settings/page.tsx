@@ -29,7 +29,7 @@ import {
   IconUpload,
   IconUser
 } from '@douyinfe/semi-icons';
-import { systemApi, SystemConfig, ConfigUpdateRequest, weeklyReportApi, resolveImageUrl } from '@/lib/api';
+import { systemApi, SystemConfig, ConfigUpdateRequest, weeklyReportApi, resolveImageUrl, userApi } from '@/lib/api';
 import { notifyPasswordPolicyUpdated } from '@/utils/password';
 import { notifySystemInfoUpdated } from '@/utils/system';
 
@@ -94,6 +94,8 @@ export default function SettingsPage() {
   const [testingEmail, setTestingEmail] = useState(false);
   const [testEmail, setTestEmail] = useState('');
   const [activeTab, setActiveTab] = useState('system');
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [loginBgFile, setLoginBgFile] = useState<File | null>(null);
 
   // 周报相关状态
   const [weeklyReports, setWeeklyReports] = useState<any[]>([]);
@@ -321,6 +323,30 @@ export default function SettingsPage() {
       Toast.error(error?.response?.data?.msg || '同步失败');
     } finally {
       setSyncingLDAP(false);
+    }
+  };
+
+  const handleUploadSystemImage = async (configKey: 'system.logo' | 'system.login_background', file: File | null) => {
+    if (!file) {
+      Toast.error('请先选择图片文件');
+      return;
+    }
+    try {
+      const uploadResp = await userApi.uploadVulnImage(file);
+      if (uploadResp.code !== 200 || !uploadResp.data?.image_url) {
+        Toast.error(uploadResp.msg || '图片上传失败');
+        return;
+      }
+      const relativePath = uploadResp.data.image_url.replace(/^https?:\/\/[^/]+/, '');
+      const updateResp = await systemApi.updateConfig(configKey, { value: relativePath });
+      if (updateResp.code === 200) {
+        Toast.success('图片配置更新成功');
+        await loadConfigs();
+      } else {
+        Toast.error(updateResp.msg || '更新配置失败');
+      }
+    } catch (error: any) {
+      Toast.error(error?.response?.data?.msg || '更新配置失败');
     }
   };
 
