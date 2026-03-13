@@ -71,18 +71,18 @@ type AssetUpdateRequest struct {
 // AssetListRequest结构体定义获取资产列表的请求参数
 // 支持分页、关键词搜索和多种过滤条件
 type AssetListRequest struct {
-	Page         int    `form:"page" binding:"min=1"`               // 页码，最小值为1
-	PageSize     int    `form:"page_size" binding:"min=1,max=1000"` // 每页数量，范围1-1000
-	Keyword      string `form:"keyword"`                            // 关键词搜索，在多个字段中模糊匹配
-	Name         string `form:"name"`                               // 按资产名称过滤
-	Type         string `form:"type"`                               // 按资产类型过滤
-	Category     string `form:"category"`                           // 按资产分类过滤
-	Status       string `form:"status"`                             // 按资产状态过滤
-	Importance   string `form:"importance"`                         // 按重要性级别过滤
-	Owner        string `form:"owner"`                              // 按负责人过滤
-	Department   string `form:"department"`                         // 按部门过滤
-	ProjectID    *uint  `form:"project_id"`                         // 按项目ID过滤，可为空
-	AssetGroupID *uint  `form:"asset_group_id"`                     // 按资产组ID过滤，可为空
+	Page         int    `form:"page" binding:"min=1"`      // 页码，最小值为1
+	PageSize     int    `form:"page_size" binding:"min=1"` // 每页数量，最小值为1（上限由服务层限制）
+	Keyword      string `form:"keyword"`                   // 关键词搜索，在多个字段中模糊匹配
+	Name         string `form:"name"`                      // 按资产名称过滤
+	Type         string `form:"type"`                      // 按资产类型过滤
+	Category     string `form:"category"`                  // 按资产分类过滤
+	Status       string `form:"status"`                    // 按资产状态过滤
+	Importance   string `form:"importance"`                // 按重要性级别过滤
+	Owner        string `form:"owner"`                     // 按负责人过滤
+	Department   string `form:"department"`                // 按部门过滤
+	ProjectID    *uint  `form:"project_id"`                // 按项目ID过滤，可为空
+	AssetGroupID *uint  `form:"asset_group_id"`            // 按资产组ID过滤，可为空
 	// 权限控制字段
 	CurrentUserID   uint   `form:"-"` // 当前用户ID，用于权限控制
 	CurrentUserRole string `form:"-"` // 当前用户角色，用于权限控制
@@ -378,6 +378,9 @@ func (s *AssetService) GetAssetList(req *AssetListRequest) (*AssetListResponse, 
 	}
 	if req.PageSize <= 0 {
 		req.PageSize = 10
+	}
+	if req.PageSize > 1000 {
+		req.PageSize = 1000
 	}
 
 	query := db.Model(&models.Asset{}).Preload("Project").Preload("AssetGroup").Preload("Creator")
