@@ -1,10 +1,13 @@
 package services
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
+	"strings"
+	"time"
 
 	"github.com/jinzhu/gorm"
-	"strings"
 	Init "vulnmain/Init"
 	"vulnmain/models"
 )
@@ -152,4 +155,77 @@ func (s *KnowledgeService) IncreaseUsage(ids []uint) {
 	}
 	db := Init.GetDB()
 	db.Model(&models.SecurityKnowledge{}).Where("id IN (?)", ids).UpdateColumn("usage_count", gorm.Expr("usage_count + ?", 1))
+}
+
+type AlertItem struct {
+	Title     string `json:"title"`
+	Severity  string `json:"severity"`
+	Source    string `json:"source"`
+	PublishAt string `json:"publish_at"`
+	Link      string `json:"link"`
+	Summary   string `json:"summary"`
+}
+
+type AlertListResponse struct {
+	Items      []AlertItem `json:"items"`
+	Total      int         `json:"total"`
+	Page       int         `json:"page"`
+	PageSize   int         `json:"page_size"`
+	TotalPages int         `json:"total_pages"`
+}
+
+func (s *KnowledgeService) ListAlerts(page, pageSize int) (*AlertListResponse, error) {
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 10
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
+
+	db := Init.GetDB()
+	var cfg models.SystemConfig
+	if err := db.Where("`key` = ?", "knowledge.alert_feeds").First(&cfg).Error; err != nil {
+		return &AlertListResponse{Items: []AlertItem{}, Total: 0, Page: page, PageSize: pageSize, TotalPages: 0}, nil
+	}
+
+	var items []AlertItem
+	if strings.TrimSpace(cfg.Value) != "" {
+		if err := json.Unmarshal([]byte(cfg.Value), &items); err != nil {
+			return nil, fmt.Errorf("漏洞预警订阅配置格式错误: %v", err)
+		}
+	}
+
+	for i := range items {
+		if strings.TrimSpace(items[i].PublishAt) == "" {
+			items[i].PublishAt = time.Now().Format(time.RFC3339)
+		}
+		if strings.TrimSpace(items[i].Severity) == "" {
+			items[i].Severity = "medium"
+		}
+	}
+
+	total := len(items)
+	if total == 0 {
+		return &AlertListResponse{Items: []AlertItem{}, Total: 0, Page: page, PageSize: pageSize, TotalPages: 0}, nil
+	}
+
+	offset := (page - 1) * pageSize
+	if offset >= total {
+		return &AlertListResponse{Items: []AlertItem{}, Total: total, Page: page, PageSize: pageSize, TotalPages: (total + pageSize - 1) / pageSize}, nil
+	}
+	end := offset + pageSize
+	if end > total {
+		end = total
+	}
+
+	return &AlertListResponse{
+		Items:      items[offset:end],
+		Total:      total,
+		Page:       page,
+		PageSize:   pageSize,
+		TotalPages: (total + pageSize - 1) / pageSize,
+	}, nil
 }

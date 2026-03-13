@@ -205,6 +205,7 @@ export default function ProjectDetailPage() {
         status: editingVuln.status || 'unfixed',
         cve_id: editingVuln.cve_id || '',
         fix_suggestion: editingVuln.fix_suggestion || '',
+        request_packet: editingVuln.request_packet || '',
         asset_id: editingVuln.asset_id,
         assignee_id: editingVuln.assignee_id || null,
         fix_deadline: editingVuln.fix_deadline ? new Date(editingVuln.fix_deadline) : null,
@@ -533,6 +534,10 @@ export default function ProjectDetailPage() {
           Toast.error('请输入修复建议');
           return;
         }
+        if (!values.request_packet?.trim()) {
+          Toast.error('请输入原始请求数据包');
+          return;
+        }
         if (!values.assignee_id) {
           Toast.error('请选择研发工程师');
           return;
@@ -551,6 +556,7 @@ export default function ProjectDetailPage() {
         severity: values.severity,
         cve_id: values.cve_id,
         fix_suggestion: values.fix_suggestion,
+        request_packet: values.request_packet,
         asset_id: values.asset_id,
         assignee_id: values.assignee_id,
         fix_deadline: values.fix_deadline ? values.fix_deadline.toISOString().split('T')[0] : undefined,
@@ -584,6 +590,10 @@ export default function ProjectDetailPage() {
         }
         if (!vulnData.fix_suggestion) {
           Toast.error('修复建议不能为空');
+          return;
+        }
+        if (!vulnData.request_packet) {
+          Toast.error('原始请求数据包不能为空');
           return;
         }
         if (!vulnData.assignee_id) {
@@ -1991,6 +2001,15 @@ export default function ProjectDetailPage() {
             disabled={isDevEngineer && !!editingVuln}
           />
 
+          <Form.TextArea
+            field="request_packet"
+            label="数据包"
+            placeholder="请粘贴 Burp Suite Copy request 原始请求数据包"
+            rules={[{ required: true, message: '请输入原始请求数据包' }]}
+            autosize={{ minRows: 5, maxRows: 12 }}
+            disabled={isDevEngineer && !!editingVuln}
+          />
+
           <Form.Select
             field="assignee_id"
             label="指派给"
@@ -2534,6 +2553,27 @@ export default function ProjectDetailPage() {
                     border: '1px solid #e9ecef',
                   }}>
                     <MarkdownViewer content={viewingVuln.description} />
+                  </div>
+                </div>
+              )}
+
+              {/* 请求数据包 */}
+              {viewingVuln.request_packet && (
+                <div style={{ marginBottom: '24px' }}>
+                  <Title heading={5} style={{ marginBottom: '16px', color: 'var(--semi-color-primary)' }}>请求数据包</Title>
+                  <div style={{
+                    padding: '16px',
+                    backgroundColor: '#0f172a',
+                    color: '#e2e8f0',
+                    borderRadius: '6px',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
+                  }}>
+                    <Text style={{ color: '#e2e8f0' }}>{viewingVuln.request_packet}</Text>
+                  </div>
+                  <div style={{ marginTop: '8px' }}>
+                    <Text type="secondary" size="small">提示：Cookie 或 Token 可能过期，但仍建议保留原始请求用于复现分析。</Text>
                   </div>
                 </div>
               )}
