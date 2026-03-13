@@ -101,6 +101,8 @@ export default function SettingsPage() {
   const [weeklyReports, setWeeklyReports] = useState<any[]>([]);
   const [weeklyReportLoading, setWeeklyReportLoading] = useState(false);
   const [generatingReport, setGeneratingReport] = useState(false);
+  const [monthlyReportData, setMonthlyReportData] = useState<any>(null);
+  const [yearlyReportData, setYearlyReportData] = useState<any>(null);
 
   // LDAP相关状态
   const [testingLDAP, setTestingLDAP] = useState(false);
@@ -748,6 +750,29 @@ export default function SettingsPage() {
     }
   };
 
+
+  const loadMonthlyReportData = async () => {
+    try {
+      const response = await weeklyReportApi.getMonthlyReportData();
+      if (response.code === 200) {
+        setMonthlyReportData(response.data);
+      }
+    } catch (error) {
+      console.error('加载月报失败:', error);
+    }
+  };
+
+  const loadYearlyReportData = async () => {
+    try {
+      const response = await weeklyReportApi.getYearlyReportData();
+      if (response.code === 200) {
+        setYearlyReportData(response.data);
+      }
+    } catch (error) {
+      console.error('加载年报失败:', error);
+    }
+  };
+
   useEffect(() => {
     loadConfigs();
   }, []);
@@ -756,6 +781,8 @@ export default function SettingsPage() {
   useEffect(() => {
     if (activeTab === 'weekly-report') {
       loadWeeklyReports();
+      loadMonthlyReportData();
+      loadYearlyReportData();
     }
   }, [activeTab]);
 

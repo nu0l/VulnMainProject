@@ -4,9 +4,11 @@ package services
 
 import (
 	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha1"
 	"encoding/base32"
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"strings"            // 导入错误处理包
@@ -257,4 +259,133 @@ func generateTOTP(secret string, counter int64) string {
 	binCode := (int(hash[offset])&0x7f)<<24 | (int(hash[offset+1])&0xff)<<16 | (int(hash[offset+2])&0xff)<<8 | (int(hash[offset+3]) & 0xff)
 	otp := binCode % 1000000
 	return fmt.Sprintf("%06d", otp)
+}
+
+// QrLoginStartResponse 扫码登录启动响应
+// 当前版本返回会话ID与二维码地址（可对接第三方扫码平台）
+type QrLoginStartResponse struct {
+	SessionID string `json:"session_id"`
+	QRCodeURL string `json:"qrcode_url"`
+	Provider  string `json:"provider"`
+	ExpiresIn int64  `json:"expires_in"`
+	Enabled   bool   `json:"enabled"`
+}
+
+// QrLoginCallbackRequest 扫码登录回调请求（后续可由第三方回调驱动）
+type QrLoginCallbackRequest struct {
+	SessionID      string `json:"session_id" binding:"required"`
+	ProviderUserID string `json:"provider_user_id" binding:"required"`
+	Username       string `json:"username"`
+	Email          string `json:"email"`
+	RealName       string `json:"real_name"`
+	Department     string `json:"department"`
+	Phone          string `json:"phone"`
+}
+
+func (s *AuthService) getSystemConfigValue(key, dft string) string {
+	db := Init.GetDB()
+	var v string
+	db.Table("system_configs").Select("value").Where("`key` = ?", key).Scan(&v)
+	if strings.TrimSpace(v) == "" {
+		return dft
+	}
+	return strings.TrimSpace(v)
+}
+
+// StartQrLogin 启动扫码登录
+func (s *AuthService) StartQrLogin() (*QrLoginStartResponse, error) {
+	enabled := s.getSystemConfigValue("auth.qrcode.enabled", "false") == "true"
+	provider := s.getSystemConfigValue("auth.qrcode.provider", "mock")
+	apiURL := s.getSystemConfigValue("auth.qrcode.api_url", "")
+
+	randomBytes := make([]byte, 8)
+	_, _ = rand.Read(randomBytes)
+	sessionID := hex.EncodeToString(randomBytes)
+
+	qrURL := fmt.Sprintf("mock://qrcode-login/%s", sessionID)
+	if strings.TrimSpace(apiURL) != "" {
+		qrURL = fmt.Sprintf("%s/start?session_id=%s", strings.TrimRight(apiURL, "/"), sessionID)
+	}
+
+	return &QrLoginStartResponse{
+		SessionID: sessionID,
+		QRCodeURL: qrURL,
+		Provider:  provider,
+		ExpiresIn: 300,
+		Enabled:   enabled,
+	}, nil
+}
+
+// QrLoginCallback 处理扫码登录回调，并按配置自动导入用户
+func (s *AuthService) QrLoginCallback(req *QrLoginCallbackRequest) (*LoginResponse, error) {
+	if s.getSystemConfigValue("auth.qrcode.enabled", "false") != "true" {
+		return nil, errors.New("扫码登录未启用")
+	}
+
+	db := Init.GetDB()
+	identity := strings.TrimSpace(req.ProviderUserID)
+	if identity == "" {
+		return nil, errors.New("provider_user_id 不能为空")
+	}
+
+	username := strings.TrimSpace(req.Username)
+	if username == "" {
+		username = "qr_" + identity
+	}
+	email := strings.TrimSpace(req.Email)
+	if email == "" {
+		email = fmt.Sprintf("%s@qrcode.local", username)
+	}
+
+	var user models.User
+	if err := db.Preload("Role.Permissions").Where("username = ? OR email = ?", username, email).First(&user).Error; err != nil {
+		if s.getSystemConfigValue("auth.qrcode.auto_import_user", "true") != "true" {
+			return nil, errors.New("扫码用户不存在，请联系管理员先创建或开启自动导入")
+		}
+
+		roleCode := s.getSystemConfigValue("auth.qrcode.default_role", "normal_user")
+		var role models.Role
+		if errRole := db.Where("code = ?", roleCode).First(&role).Error; errRole != nil {
+			db.Where("code = ?", "normal_user").First(&role)
+		}
+
+		user = models.User{
+			Username:   username,
+			Email:      email,
+			RealName:   req.RealName,
+			Department: req.Department,
+			Phone:      req.Phone,
+			RoleID:     role.ID,
+			Status:     1,
+			Source:     "api",
+		}
+		_ = user.SetPassword("qrcode_login_placeholder")
+		if errCreate := db.Create(&user).Error; errCreate != nil {
+			return nil, errors.New("自动导入扫码用户失败")
+		}
+		if errReload := db.Preload("Role.Permissions").Where("id = ?", user.ID).First(&user).Error; errReload != nil {
+			return nil, errors.New("加载扫码用户失败")
+		}
+	}
+
+	now := time.Now().Truncate(time.Second)
+	user.LastLoginAt = &now
+	db.Save(&user)
+
+	token, err := utils.GenerateToken(&user)
+	if err != nil {
+		return nil, errors.New("生成令牌失败")
+	}
+
+	var permissions []string
+	for _, perm := range user.Role.Permissions {
+		permissions = append(permissions, perm.Code)
+	}
+
+	return &LoginResponse{
+		Token:       token,
+		User:        &user,
+		Permissions: permissions,
+		ExpiresIn:   int64(utils.GetJWTExpire().Seconds()),
+	}, nil
 }

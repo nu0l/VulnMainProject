@@ -61,9 +61,11 @@ func InitRouter(r *gin.Engine) *gin.Engine {
 	publicAPI := r.Group("/api")
 	{
 		// 认证相关接口
-		publicAPI.POST("/login", api.Login)                      // 用户登录接口
-		publicAPI.POST("/refresh", api.RefreshToken)             // JWT令牌刷新接口
-		publicAPI.GET("/password/policy", api.GetPasswordPolicy) // 获取密码策略
+		publicAPI.POST("/login", api.Login)                           // 用户登录接口
+		publicAPI.POST("/login/qrcode/start", api.StartQrLogin)       // 启动扫码登录
+		publicAPI.POST("/login/qrcode/callback", api.QrLoginCallback) // 扫码登录回调
+		publicAPI.POST("/refresh", api.RefreshToken)                  // JWT令牌刷新接口
+		publicAPI.GET("/password/policy", api.GetPasswordPolicy)      // 获取密码策略
 
 		// 公开系统信息接口
 		publicAPI.GET("/system/info", api.GetPublicSystemInfo) // 获取公开的系统信息（公司名称等）
@@ -321,6 +323,8 @@ func InitRouter(r *gin.Engine) *gin.Engine {
 
 			// 周报历史记录管理
 			weeklyReportAPI.GET("/history", api.GetWeeklyReportHistory)             // 获取周报历史记录
+			weeklyReportAPI.GET("/monthly/data", api.GetMonthlyReportData)          // 获取月报数据
+			weeklyReportAPI.GET("/yearly/data", api.GetYearlyReportData)            // 获取年报数据
 			weeklyReportAPI.GET("/file/:id/preview", api.PreviewWeeklyReportFile)   // 预览历史周报文件
 			weeklyReportAPI.GET("/file/:id/download", api.DownloadWeeklyReportFile) // 下载历史周报文件
 		}

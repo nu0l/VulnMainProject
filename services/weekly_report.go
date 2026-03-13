@@ -21,27 +21,27 @@ type WeeklyReportService struct{}
 
 // WeeklyReportData 周报数据结构
 type WeeklyReportData struct {
-	WeekStart                string                    `json:"week_start"`                 // 周开始日期
-	WeekEnd                  string                    `json:"week_end"`                   // 周结束日期
-	TotalSubmitted           int64                     `json:"total_submitted"`            // 本周提交漏洞总数
-	TotalFixed               int64                     `json:"total_fixed"`                // 本周修复漏洞总数
-	TotalFixing              int64                     `json:"total_fixing"`               // 修复中漏洞数
-	TotalRetesting           int64                     `json:"total_retesting"`            // 待复测漏洞数
-	SecurityEngineerRanking  []EngineerWeeklyRanking   `json:"security_engineer_ranking"`  // 安全工程师排名
-	DevEngineerRanking       []EngineerWeeklyRanking   `json:"dev_engineer_ranking"`       // 研发工程师排名
-	ProjectVulnRanking       []ProjectWeeklyRanking    `json:"project_vuln_ranking"`       // 项目漏洞排名
-	SeverityStats            map[string]int64          `json:"severity_stats"`             // 严重程度统计
-	StatusStats              map[string]int64          `json:"status_stats"`               // 状态统计
-	GeneratedAt              time.Time                 `json:"generated_at"`               // 生成时间
+	WeekStart               string                  `json:"week_start"`                // 周开始日期
+	WeekEnd                 string                  `json:"week_end"`                  // 周结束日期
+	TotalSubmitted          int64                   `json:"total_submitted"`           // 本周提交漏洞总数
+	TotalFixed              int64                   `json:"total_fixed"`               // 本周修复漏洞总数
+	TotalFixing             int64                   `json:"total_fixing"`              // 修复中漏洞数
+	TotalRetesting          int64                   `json:"total_retesting"`           // 待复测漏洞数
+	SecurityEngineerRanking []EngineerWeeklyRanking `json:"security_engineer_ranking"` // 安全工程师排名
+	DevEngineerRanking      []EngineerWeeklyRanking `json:"dev_engineer_ranking"`      // 研发工程师排名
+	ProjectVulnRanking      []ProjectWeeklyRanking  `json:"project_vuln_ranking"`      // 项目漏洞排名
+	SeverityStats           map[string]int64        `json:"severity_stats"`            // 严重程度统计
+	StatusStats             map[string]int64        `json:"status_stats"`              // 状态统计
+	GeneratedAt             time.Time               `json:"generated_at"`              // 生成时间
 }
 
 // EngineerWeeklyRanking 工程师周报排名
 type EngineerWeeklyRanking struct {
-	UserID       uint   `json:"user_id"`
-	Username     string `json:"username"`
-	RealName     string `json:"real_name"`
-	Count        int64  `json:"count"`
-	Department   string `json:"department"`
+	UserID     uint   `json:"user_id"`
+	Username   string `json:"username"`
+	RealName   string `json:"real_name"`
+	Count      int64  `json:"count"`
+	Department string `json:"department"`
 }
 
 // ProjectWeeklyRanking 项目周报排名
@@ -55,12 +55,12 @@ type ProjectWeeklyRanking struct {
 // GenerateWeeklyReport 生成周报数据
 func (s *WeeklyReportService) GenerateWeeklyReport() (*WeeklyReportData, error) {
 	db := Init.GetDB()
-	
+
 	// 计算本周的开始和结束时间
 	now := time.Now()
 	weekStart := getWeekStart(now)
 	weekEnd := getWeekEnd(now)
-	
+
 	report := &WeeklyReportData{
 		WeekStart:     weekStart.Format("2006-01-02"),
 		WeekEnd:       weekEnd.Format("2006-01-02"),
@@ -68,27 +68,27 @@ func (s *WeeklyReportService) GenerateWeeklyReport() (*WeeklyReportData, error) 
 		StatusStats:   make(map[string]int64),
 		GeneratedAt:   now,
 	}
-	
+
 	// 统计本周提交的漏洞数量
 	db.Model(&models.Vulnerability{}).
 		Where("submitted_at >= ? AND submitted_at <= ?", weekStart, weekEnd).
 		Count(&report.TotalSubmitted)
-	
+
 	// 统计本周修复的漏洞数量
 	db.Model(&models.Vulnerability{}).
 		Where("fixed_at >= ? AND fixed_at <= ? AND fixed_at IS NOT NULL", weekStart, weekEnd).
 		Count(&report.TotalFixed)
-	
+
 	// 统计当前修复中的漏洞数量
 	db.Model(&models.Vulnerability{}).
 		Where("status = ?", "fixing").
 		Count(&report.TotalFixing)
-	
+
 	// 统计当前待复测的漏洞数量
 	db.Model(&models.Vulnerability{}).
 		Where("status = ?", "retesting").
 		Count(&report.TotalRetesting)
-	
+
 	// 安全工程师排名（本周提交漏洞数）
 	var secRanking []EngineerWeeklyRanking
 	db.Table("vulnerabilities").
@@ -100,7 +100,7 @@ func (s *WeeklyReportService) GenerateWeeklyReport() (*WeeklyReportData, error) 
 		Limit(10).
 		Scan(&secRanking)
 	report.SecurityEngineerRanking = secRanking
-	
+
 	// 研发工程师排名（本周修复漏洞数）
 	var devRanking []EngineerWeeklyRanking
 	db.Table("vulnerabilities").
@@ -112,7 +112,7 @@ func (s *WeeklyReportService) GenerateWeeklyReport() (*WeeklyReportData, error) 
 		Limit(10).
 		Scan(&devRanking)
 	report.DevEngineerRanking = devRanking
-	
+
 	// 项目漏洞排名（本周新增漏洞数）
 	var projectRanking []ProjectWeeklyRanking
 	db.Table("vulnerabilities").
@@ -125,7 +125,7 @@ func (s *WeeklyReportService) GenerateWeeklyReport() (*WeeklyReportData, error) 
 		Limit(10).
 		Scan(&projectRanking)
 	report.ProjectVulnRanking = projectRanking
-	
+
 	// 严重程度统计
 	var severityStats []struct {
 		Severity string `json:"severity"`
@@ -136,11 +136,11 @@ func (s *WeeklyReportService) GenerateWeeklyReport() (*WeeklyReportData, error) 
 		Where("submitted_at >= ? AND submitted_at <= ?", weekStart, weekEnd).
 		Group("severity").
 		Scan(&severityStats)
-	
+
 	for _, stat := range severityStats {
 		report.SeverityStats[stat.Severity] = stat.Count
 	}
-	
+
 	// 状态统计
 	var statusStats []struct {
 		Status string `json:"status"`
@@ -151,11 +151,11 @@ func (s *WeeklyReportService) GenerateWeeklyReport() (*WeeklyReportData, error) 
 		Where("submitted_at >= ? AND submitted_at <= ?", weekStart, weekEnd).
 		Group("status").
 		Scan(&statusStats)
-	
+
 	for _, stat := range statusStats {
 		report.StatusStats[stat.Status] = stat.Count
 	}
-	
+
 	return report, nil
 }
 
@@ -415,7 +415,7 @@ func (s *WeeklyReportService) SendWeeklyReport() error {
 	}
 
 	// 生成文件名
-	weekStartFormatted := data.WeekStart // 格式：2006-01-02
+	weekStartFormatted := data.WeekStart                                                             // 格式：2006-01-02
 	weekStartFormatted = weekStartFormatted[:4] + weekStartFormatted[5:7] + weekStartFormatted[8:10] // 转换为：20060102
 	fileName := generateFileName(weekStartFormatted)
 
@@ -505,8 +505,8 @@ func (s *WeeklyReportService) generateEmailBody(data *WeeklyReportData) string {
 
 漏洞管理系统
 %s
-`, data.WeekStart, data.WeekEnd, data.TotalSubmitted, data.TotalFixed, 
-   data.TotalFixing, data.TotalRetesting, data.GeneratedAt.Format("2006-01-02 15:04:05"))
+`, data.WeekStart, data.WeekEnd, data.TotalSubmitted, data.TotalFixed,
+		data.TotalFixing, data.TotalRetesting, data.GeneratedAt.Format("2006-01-02 15:04:05"))
 }
 
 // 辅助函数
@@ -515,7 +515,7 @@ func getWeekStart(t time.Time) time.Time {
 	if weekday == 0 {
 		weekday = 7 // 将周日设为7
 	}
-	return t.AddDate(0, 0, -(weekday-1)).Truncate(24 * time.Hour)
+	return t.AddDate(0, 0, -(weekday - 1)).Truncate(24 * time.Hour)
 }
 
 func getWeekEnd(t time.Time) time.Time {
@@ -558,4 +558,71 @@ func (s *WeeklyReportService) savePDFFile(pdfData []byte, fileName string) (stri
 	}
 
 	return filePath, nil
+}
+
+// PeriodReportData 通用周期报表（月报/年报）
+type PeriodReportData struct {
+	PeriodType     string           `json:"period_type"`
+	PeriodStart    string           `json:"period_start"`
+	PeriodEnd      string           `json:"period_end"`
+	TotalSubmitted int64            `json:"total_submitted"`
+	TotalFixed     int64            `json:"total_fixed"`
+	TotalFixing    int64            `json:"total_fixing"`
+	TotalRetesting int64            `json:"total_retesting"`
+	SeverityStats  map[string]int64 `json:"severity_stats"`
+	StatusStats    map[string]int64 `json:"status_stats"`
+	GeneratedAt    time.Time        `json:"generated_at"`
+}
+
+// GeneratePeriodReport 生成月报/年报核心数据
+func (s *WeeklyReportService) GeneratePeriodReport(periodType string) (*PeriodReportData, error) {
+	db := Init.GetDB()
+	now := time.Now()
+
+	var start time.Time
+	var end time.Time
+	switch periodType {
+	case "monthly":
+		start = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+		end = start.AddDate(0, 1, 0).Add(-time.Nanosecond)
+	case "yearly":
+		start = time.Date(now.Year(), 1, 1, 0, 0, 0, 0, now.Location())
+		end = time.Date(now.Year(), 12, 31, 23, 59, 59, int(time.Second-time.Nanosecond), now.Location())
+	default:
+		return nil, fmt.Errorf("不支持的报表类型: %s", periodType)
+	}
+
+	report := &PeriodReportData{
+		PeriodType:    periodType,
+		PeriodStart:   start.Format("2006-01-02"),
+		PeriodEnd:     end.Format("2006-01-02"),
+		SeverityStats: make(map[string]int64),
+		StatusStats:   make(map[string]int64),
+		GeneratedAt:   now,
+	}
+
+	db.Model(&models.Vulnerability{}).Where("submitted_at >= ? AND submitted_at <= ?", start, end).Count(&report.TotalSubmitted)
+	db.Model(&models.Vulnerability{}).Where("fixed_at >= ? AND fixed_at <= ? AND fixed_at IS NOT NULL", start, end).Count(&report.TotalFixed)
+	db.Model(&models.Vulnerability{}).Where("status = ?", "fixing").Count(&report.TotalFixing)
+	db.Model(&models.Vulnerability{}).Where("status = ?", "retesting").Count(&report.TotalRetesting)
+
+	var severityStats []struct {
+		Severity string
+		Count    int64
+	}
+	db.Model(&models.Vulnerability{}).Select("severity, COUNT(*) as count").Where("submitted_at >= ? AND submitted_at <= ?", start, end).Group("severity").Scan(&severityStats)
+	for _, stat := range severityStats {
+		report.SeverityStats[stat.Severity] = stat.Count
+	}
+
+	var statusStats []struct {
+		Status string
+		Count  int64
+	}
+	db.Model(&models.Vulnerability{}).Select("status, COUNT(*) as count").Where("submitted_at >= ? AND submitted_at <= ?", start, end).Group("status").Scan(&statusStats)
+	for _, stat := range statusStats {
+		report.StatusStats[stat.Status] = stat.Count
+	}
+
+	return report, nil
 }

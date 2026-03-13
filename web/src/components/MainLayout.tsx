@@ -58,6 +58,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
         return '研发工程师';
       case 4:
         return '普通用户';
+      case 5:
+        return '领导';
       default:
         return '未知角色';
     }

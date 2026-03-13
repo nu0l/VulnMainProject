@@ -36,6 +36,7 @@ func GetPublicSystemInfo(c *gin.Context) {
 	result["login_background"] = "/login.jpg"
 	result["mfa_enabled"] = false
 	result["mfa_optional"] = true
+	result["qrcode_enabled"] = false
 
 	// 从配置中获取实际值
 	for _, config := range configs {
@@ -52,6 +53,8 @@ func GetPublicSystemInfo(c *gin.Context) {
 			result["logo"] = config.Value
 		case "system.login_background":
 			result["login_background"] = config.Value
+		case "auth.qrcode.enabled":
+			result["qrcode_enabled"] = config.Value == "true"
 		}
 	}
 

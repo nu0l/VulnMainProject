@@ -101,6 +101,24 @@ export interface LoginResponse {
   };
 }
 
+export interface QrLoginStartResponse {
+  session_id: string;
+  qrcode_url: string;
+  provider: string;
+  expires_in: number;
+  enabled: boolean;
+}
+
+export interface QrLoginCallbackRequest {
+  session_id: string;
+  provider_user_id: string;
+  username?: string;
+  email?: string;
+  real_name?: string;
+  department?: string;
+  phone?: string;
+}
+
 export interface SystemInfo {
   system_name: string;
   system_title: string;
@@ -110,6 +128,7 @@ export interface SystemInfo {
   version: string;
   mfa_enabled?: boolean;
   mfa_optional?: boolean;
+  qrcode_enabled?: boolean;
 }
 
 // 系统配置接口
@@ -214,6 +233,18 @@ export const authApi = {
     return response.data;
   },
 
+  // 启动扫码登录
+  startQrLogin: async (): Promise<ApiResponse<QrLoginStartResponse>> => {
+    const response = await api.post('/login/qrcode/start');
+    return response.data;
+  },
+
+  // 扫码登录回调（后续可由后端对接第三方后自动触发）
+  qrLoginCallback: async (data: QrLoginCallbackRequest): Promise<ApiResponse<LoginResponse>> => {
+    const response = await api.post('/login/qrcode/callback', data);
+    return response.data;
+  },
+
   // 刷新token
   refreshToken: async (token: string): Promise<ApiResponse<LoginResponse>> => {
     const response = await api.post('/refresh', { token });
@@ -235,6 +266,21 @@ export const authApi = {
   // 获取仪表板数据
   getDashboardData: async (): Promise<ApiResponse<DashboardData>> => {
     const response = await api.get('/dashboard/data');
+    return response.data;
+  },
+
+  // 获取密码策略（兼容旧调用）
+  getPasswordPolicy: async (): Promise<ApiResponse<{
+    policy: {
+      min_length: number;
+      require_uppercase: boolean;
+      require_lowercase: boolean;
+      require_number: boolean;
+      require_special: boolean;
+    };
+    requirements: string[];
+  }>> => {
+    const response = await api.get('/password/policy');
     return response.data;
   },
 };
@@ -332,6 +378,8 @@ export const authUtils = {
         return 'dev_engineer';
       case 4:
         return 'normal_user';
+      case 5:
+        return 'leader';
       default:
         return 'unknown';
     }
@@ -348,6 +396,8 @@ export const authUtils = {
         return '研发工程师';
       case 4:
         return '普通用户';
+      case 5:
+        return '领导';
       default:
         return '未知角色';
     }
@@ -539,6 +589,18 @@ export const weeklyReportApi = {
   // 获取周报数据
   getWeeklyReportData: async (): Promise<ApiResponse<WeeklyReportData>> => {
     const response = await api.get('/system/weekly-report/data');
+    return response.data;
+  },
+
+  // 获取月报数据
+  getMonthlyReportData: async (): Promise<ApiResponse<any>> => {
+    const response = await api.get('/system/weekly-report/monthly/data');
+    return response.data;
+  },
+
+  // 获取年报数据
+  getYearlyReportData: async (): Promise<ApiResponse<any>> => {
+    const response = await api.get('/system/weekly-report/yearly/data');
     return response.data;
   },
 
@@ -865,6 +927,7 @@ export const USER_ROLES = [
   { value: 2, label: '安全工程师', code: 'security_engineer' },
   { value: 3, label: '研发工程师', code: 'dev_engineer' },
   { value: 4, label: '普通用户', code: 'normal_user' },
+  { value: 5, label: '领导', code: 'leader' },
 ];
 
 // 用户状态枚举

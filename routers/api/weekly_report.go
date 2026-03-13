@@ -338,3 +338,23 @@ func DownloadWeeklyReportFile(c *gin.Context) {
 		(&services.SystemService{}).RecordOperation(userID.(uint), "report", "export", report.FileName, "导出历史周报", "success", c.ClientIP(), c.GetHeader("User-Agent"))
 	}
 }
+
+// GetMonthlyReportData 获取月报数据
+func GetMonthlyReportData(c *gin.Context) {
+	data, err := weeklyReportService.GeneratePeriodReport("monthly")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "msg": "生成月报数据失败: " + err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"code": 200, "msg": "获取成功", "data": data})
+}
+
+// GetYearlyReportData 获取年报数据
+func GetYearlyReportData(c *gin.Context) {
+	data, err := weeklyReportService.GeneratePeriodReport("yearly")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "msg": "生成年报数据失败: " + err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"code": 200, "msg": "获取成功", "data": data})
+}

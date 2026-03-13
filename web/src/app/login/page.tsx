@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Form, Button, Toast, Typography } from '@douyinfe/semi-ui';
+import { Form, Button, Toast, Typography, Modal, Space } from '@douyinfe/semi-ui';
 import { IconUser, IconLock, IconEyeOpened, IconEyeClosed } from '@douyinfe/semi-icons';
 import { authApi, authUtils, systemApi, resolveImageUrl, type LoginRequest, type SystemInfo } from '@/lib/api';
 
@@ -12,6 +12,10 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
+  const [qrModalVisible, setQrModalVisible] = useState(false);
+  const [qrLoading, setQrLoading] = useState(false);
+  const [qrData, setQrData] = useState<{ session_id: string; qrcode_url: string } | null>(null);
+
   const [systemInfo, setSystemInfo] = useState<SystemInfo>({
     system_name: 'VulnMain',
     system_title: '漏洞管理平台',
@@ -21,6 +25,7 @@ export default function LoginPage() {
     version: '1.0.0',
     mfa_enabled: false,
     mfa_optional: true,
+    qrcode_enabled: false,
   });
 
   // 监听窗口大小变化
@@ -102,6 +107,50 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  const handleOpenQrLogin = async () => {
+    try {
+      setQrLoading(true);
+      const res = await authApi.startQrLogin();
+      if (res.code === 200 && res.data) {
+        if (!res.data.enabled) {
+          Toast.warning('系统未启用扫码登录，请在系统设置-认证设置中开启');
+          return;
+        }
+        setQrData({ session_id: res.data.session_id, qrcode_url: res.data.qrcode_url });
+        setQrModalVisible(true);
+      } else {
+        Toast.error(res.msg || '获取扫码信息失败');
+      }
+    } catch (error: any) {
+      Toast.error(error?.response?.data?.msg || '获取扫码信息失败');
+    } finally {
+      setQrLoading(false);
+    }
+  };
+
+  const handleMockQrLogin = async () => {
+    if (!qrData) return;
+    try {
+      const res = await authApi.qrLoginCallback({
+        session_id: qrData.session_id,
+        provider_user_id: 'mock_user_001',
+        username: 'leader_demo',
+        real_name: '扫码用户',
+        department: '管理层',
+      });
+      if (res.code === 200 && res.data) {
+        authUtils.saveLoginInfo(res.data);
+        Toast.success('扫码登录成功');
+        window.location.href = '/dashboard';
+      } else {
+        Toast.error(res.msg || '扫码登录失败');
+      }
+    } catch (error: any) {
+      Toast.error(error?.response?.data?.msg || '扫码登录失败');
+    }
+  };
+
 
   return (
     <div style={{ 
@@ -486,6 +535,18 @@ export default function LoginPage() {
               }} />
           </Button>
 
+          {systemInfo.qrcode_enabled && (
+            <Button
+              style={{ marginTop: 12 }}
+              type="tertiary"
+              block
+              loading={qrLoading}
+              onClick={handleOpenQrLogin}
+            >
+              扫码登录（可扩展对接第三方）
+            </Button>
+          )}
+
             {/* 记住我选项 */}
             <div style={{ 
               textAlign: 'left', 
@@ -542,6 +603,27 @@ export default function LoginPage() {
 
           </Form>
         </div>
+
+      <Modal
+        title="扫码登录"
+        visible={qrModalVisible}
+        onCancel={() => setQrModalVisible(false)}
+        footer={
+          <Space>
+            <Button onClick={() => setQrModalVisible(false)}>关闭</Button>
+            <Button theme="solid" type="primary" onClick={handleMockQrLogin}>模拟扫码完成登录</Button>
+          </Space>
+        }
+      >
+        <Text type="secondary">后续可直接对接企业微信/钉钉/飞书扫码登录API。当前展示会话与二维码地址。</Text>
+        <div style={{ marginTop: 12 }}>
+          <Text>会话ID：{qrData?.session_id || '-'}</Text>
+        </div>
+        <div style={{ marginTop: 8 }}>
+          <Text>二维码地址：{qrData?.qrcode_url || '-'}</Text>
+        </div>
+      </Modal>
+
       </div>
     </div>
   );

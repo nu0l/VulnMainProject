@@ -75,6 +75,7 @@ func InitDefaultData() error {
 		{Name: "安全工程师", Code: "security_engineer", Description: "安全工程师，负责漏洞管理和安全审计"},
 		{Name: "研发工程师", Code: "dev_engineer", Description: "研发工程师，负责漏洞修复"},
 		{Name: "普通用户", Code: "normal_user", Description: "普通用户，最小权限，仅浏览"},
+		{Name: "领导", Code: "leader", Description: "领导角色，除系统设置外可操作业务模块"},
 	}
 
 	// 遍历角色列表，检查每个角色是否已存在
@@ -219,6 +220,17 @@ func InitDefaultData() error {
 	}
 	assignRolePermissions("dev_engineer", devEngineerPermissions)
 
+	// 为领导角色分配权限（除系统设置外）
+	leaderPermissions := []string{
+		"dashboard:view",
+		"project:view", "project:create", "project:edit", "project:delete",
+		"user:view", "user:create", "user:edit", "user:delete", "user:reset_password",
+		"vuln:view", "vuln:create", "vuln:edit", "vuln:assign", "vuln:retest", "vuln:fix", "vuln:ignore", "vuln:change_status",
+		"asset:view", "asset:create", "asset:edit", "asset:delete",
+		"knowledge:view", "knowledge:edit",
+	}
+	assignRolePermissions("leader", leaderPermissions)
+
 	// 初始化默认管理员用户
 	// 系统启动时自动创建超级管理员账户
 	var adminCount int64
@@ -300,6 +312,11 @@ func InitDefaultData() error {
 		{Key: "auth.mfa.method", Value: "totp", Type: "string", Group: "auth", Description: "二次验证方式: totp/sms", IsPublic: false},
 		{Key: "auth.mfa.totp_secret", Value: "", Type: "string", Group: "auth", Description: "TOTP共享密钥(Base32)", IsPublic: false},
 		{Key: "auth.mfa.sms_mock_code", Value: "123456", Type: "string", Group: "auth", Description: "短信验证码(测试环境)", IsPublic: false},
+		{Key: "auth.qrcode.enabled", Value: "false", Type: "bool", Group: "auth", Description: "启用扫码登录", IsPublic: true},
+		{Key: "auth.qrcode.provider", Value: "mock", Type: "string", Group: "auth", Description: "扫码登录提供方标识", IsPublic: false},
+		{Key: "auth.qrcode.api_url", Value: "", Type: "string", Group: "auth", Description: "扫码登录API地址", IsPublic: false},
+		{Key: "auth.qrcode.auto_import_user", Value: "true", Type: "bool", Group: "auth", Description: "扫码用户不存在时自动导入", IsPublic: false},
+		{Key: "auth.qrcode.default_role", Value: "normal_user", Type: "string", Group: "auth", Description: "扫码导入用户默认角色编码", IsPublic: false},
 
 		// LDAP 配置
 		{Key: "ldap.enabled", Value: "false", Type: "bool", Group: "ldap", Description: "启用LDAP认证与同步", IsPublic: false},
