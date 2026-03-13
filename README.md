@@ -225,32 +225,3 @@ npm run build && npm run start
 | **Semi UI** | 2.83+ | 组件库 | 企业级设计 |
 | **Axios** | 1.6+ | HTTP 客户端 | 请求拦截、响应处理 |
 | **React Markdown** | 10+ | Markdown 渲染 | 富文本支持 |
-
-
-## 📞 联系与支持
-
-### 获取帮助
-
-- 🐛 **问题反馈**: [GitHub Issues](https://github.com/VulnMain/VulnMainProject/issues)
-- 💬 **讨论交流**: 沟通交流群（待定）
-
-
-## 📄 许可证
-
-本项目采用 [Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0) 开源协议。
-
-Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
-
-http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-
----
-
-<div align="center">
-
-**如果这个项目对您有帮助，请给本项目一个 ⭐ Star！**
-
-Made with ❤️ by VulnMain Team
-
-</div>
