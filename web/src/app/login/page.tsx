@@ -15,6 +15,7 @@ export default function LoginPage() {
   const [qrModalVisible, setQrModalVisible] = useState(false);
   const [qrLoading, setQrLoading] = useState(false);
   const [qrData, setQrData] = useState<{ session_id: string; qrcode_url: string } | null>(null);
+  const [logoLoadFailed, setLogoLoadFailed] = useState(false);
 
   const [systemInfo, setSystemInfo] = useState<SystemInfo>({
     system_name: 'VulnMain',
@@ -320,10 +321,23 @@ export default function LoginPage() {
                 alignItems: 'center',
                 justifyContent: 'center'
               }}>
-                <svg width={isMobile ? "24" : (isTablet ? "28" : "32")} height={isMobile ? "24" : (isTablet ? "28" : "32")} viewBox="0 0 24 24" fill="none" style={{ color: 'white' }}>
-                  <path d="M12 2l2.09 6.26L22 9l-7.91.74L12 16l-2.09-6.26L2 9l7.91-.74L12 2z" fill="currentColor"/>
-                  <circle cx="12" cy="12" r="3" fill="currentColor" opacity="0.4"/>
-                </svg>
+                {!logoLoadFailed ? (
+                  <img
+                    src="/logo.png"
+                    alt="系统Logo"
+                    style={{
+                      width: isMobile ? '24px' : (isTablet ? '28px' : '32px'),
+                      height: isMobile ? '24px' : (isTablet ? '28px' : '32px'),
+                      objectFit: 'contain'
+                    }}
+                    onError={() => setLogoLoadFailed(true)}
+                  />
+                ) : (
+                  <svg width={isMobile ? "24" : (isTablet ? "28" : "32")} height={isMobile ? "24" : (isTablet ? "28" : "32")} viewBox="0 0 24 24" fill="none" style={{ color: 'white' }}>
+                    <path d="M12 2l2.09 6.26L22 9l-7.91.74L12 16l-2.09-6.26L2 9l7.91-.74L12 2z" fill="currentColor"/>
+                    <circle cx="12" cy="12" r="3" fill="currentColor" opacity="0.4"/>
+                  </svg>
+                )}
             </div>
           </div>
           
