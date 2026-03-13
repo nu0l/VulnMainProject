@@ -531,7 +531,7 @@ func generateRandomString(length int) string {
 
 // ensureWeeklyDir 确保weekly目录存在
 func ensureWeeklyDir() error {
-	weeklyDir := filepath.Join("uploads", "weekly")
+	weeklyDir := filepath.Join(Init.GetUploadRoot(), "weekly")
 	return os.MkdirAll(weeklyDir, 0755)
 }
 
@@ -550,7 +550,7 @@ func (s *WeeklyReportService) savePDFFile(pdfData []byte, fileName string) (stri
 	}
 
 	// 构建完整文件路径
-	filePath := filepath.Join("uploads", "weekly", fileName)
+	filePath := filepath.Join(Init.GetUploadRoot(), "weekly", fileName)
 
 	// 写入文件
 	if err := os.WriteFile(filePath, pdfData, 0644); err != nil {

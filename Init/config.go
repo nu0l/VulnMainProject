@@ -64,20 +64,45 @@ func InitConfig() {
 }
 
 // GetUploadRoot 获取上传文件根目录（优先使用 upload.dir 配置）
+// 若首选目录不可写，会自动回退到可写目录（例如可执行文件目录或 /tmp）。
 func GetUploadRoot() string {
-	uploadDir := viper.GetString("upload.dir")
-	if strings.TrimSpace(uploadDir) == "" {
+	uploadDir := strings.TrimSpace(viper.GetString("upload.dir"))
+	if uploadDir == "" {
 		uploadDir = "uploads"
 	}
 
+	candidates := make([]string, 0, 3)
 	if filepath.IsAbs(uploadDir) {
-		return uploadDir
+		candidates = append(candidates, uploadDir)
+	} else {
+		if workdir, err := os.Getwd(); err == nil && strings.TrimSpace(workdir) != "" {
+			candidates = append(candidates, filepath.Join(workdir, uploadDir))
+		}
+		if exePath, err := os.Executable(); err == nil {
+			exeDir := filepath.Dir(exePath)
+			if strings.TrimSpace(exeDir) != "" {
+				candidates = append(candidates, filepath.Join(exeDir, uploadDir))
+			}
+		}
 	}
 
-	workdir, err := os.Getwd()
-	if err != nil || workdir == "" {
-		return uploadDir
+	fallback := filepath.Join(os.TempDir(), "vulnmain", "uploads")
+	candidates = append(candidates, fallback)
+
+	seen := map[string]struct{}{}
+	for _, candidate := range candidates {
+		candidate = filepath.Clean(candidate)
+		if candidate == "" {
+			continue
+		}
+		if _, ok := seen[candidate]; ok {
+			continue
+		}
+		seen[candidate] = struct{}{}
+		if err := os.MkdirAll(candidate, 0755); err == nil {
+			return candidate
+		}
 	}
 
-	return filepath.Join(workdir, uploadDir)
+	return fallback
 }
