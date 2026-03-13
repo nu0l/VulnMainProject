@@ -559,6 +559,82 @@ export default function SettingsPage() {
           </div>
 
         {/* 邮件配置测试功能 */}
+        {group === 'system' && (
+          <>
+            <Divider margin="32px 0" />
+            <div
+              style={{
+                background: 'var(--semi-color-fill-0)',
+                border: '1px solid var(--semi-color-border)',
+                borderRadius: '8px',
+                padding: '20px'
+              }}
+            >
+              <Title heading={5} style={{ marginBottom: 16 }}>登录界面个性化</Title>
+              <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+                可自定义登录页Logo与背景图，上传后将立即在登录页面生效。
+              </Text>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div>
+                  <Text strong style={{ display: 'block', marginBottom: 8 }}>登录Logo</Text>
+                  <Space align="center">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
+                    />
+                    <Button
+                      type="primary"
+                      theme="solid"
+                      onClick={() => handleUploadSystemImage('system.logo', logoFile)}
+                      disabled={!logoFile}
+                    >
+                      上传Logo
+                    </Button>
+                  </Space>
+                  {configs.find(c => c.key === 'system.logo')?.value && (
+                    <div style={{ marginTop: 8 }}>
+                      <img
+                        src={resolveImageUrl(configs.find(c => c.key === 'system.logo')?.value || '')}
+                        alt="系统Logo预览"
+                        style={{ height: 48, maxWidth: 220, objectFit: 'contain' }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <Text strong style={{ display: 'block', marginBottom: 8 }}>登录背景图</Text>
+                  <Space align="center">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setLoginBgFile(e.target.files?.[0] || null)}
+                    />
+                    <Button
+                      type="primary"
+                      theme="solid"
+                      onClick={() => handleUploadSystemImage('system.login_background', loginBgFile)}
+                      disabled={!loginBgFile}
+                    >
+                      上传背景图
+                    </Button>
+                  </Space>
+                  <div style={{ marginTop: 8 }}>
+                    <img
+                      src={resolveImageUrl(configs.find(c => c.key === 'system.login_background')?.value || '/login.jpg')}
+                      alt="登录背景图预览"
+                      style={{ width: 240, height: 120, objectFit: 'cover', borderRadius: 6 }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* 邮件配置测试功能 */}
         {group === 'email' && (
           <>
             <Divider margin="32px 0" />
@@ -862,6 +938,20 @@ export default function SettingsPage() {
             </span>
           } itemKey="weekly-report">
             <div style={{ padding: '24px' }}>
+              <div style={{ marginBottom: 24 }}>
+                <Title heading={5}>月报 / 年报总览</Title>
+                <Space wrap align="start" style={{ width: '100%' }}>
+                  <Card style={{ minWidth: 320, flex: 1 }}>
+                    <Title heading={6} style={{ marginBottom: 8 }}>月报（{monthlyReportData?.period_start || '-'} ~ {monthlyReportData?.period_end || '-'}）</Title>
+                    <Text type="secondary">提交：{monthlyReportData?.total_submitted ?? '-'}，修复：{monthlyReportData?.total_fixed ?? '-'}，修复中：{monthlyReportData?.total_fixing ?? '-'}，待复测：{monthlyReportData?.total_retesting ?? '-'}</Text>
+                  </Card>
+                  <Card style={{ minWidth: 320, flex: 1 }}>
+                    <Title heading={6} style={{ marginBottom: 8 }}>年报（{yearlyReportData?.period_start || '-'} ~ {yearlyReportData?.period_end || '-'}）</Title>
+                    <Text type="secondary">提交：{yearlyReportData?.total_submitted ?? '-'}，修复：{yearlyReportData?.total_fixed ?? '-'}，修复中：{yearlyReportData?.total_fixing ?? '-'}，待复测：{yearlyReportData?.total_retesting ?? '-'}</Text>
+                  </Card>
+                </Space>
+              </div>
+
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
                 <div>
                   <Title heading={4}>周报历史记录</Title>
