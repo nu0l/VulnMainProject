@@ -3,7 +3,9 @@
 package routers
 
 import (
-	"net/http"             // 导入HTTP包，用于状态码
+	"net/http" // 导入HTTP包，用于状态码
+	"path/filepath"
+	Init "vulnmain/Init"
 	"vulnmain/middleware"  // 导入中间件包，使用认证和权限中间件
 	"vulnmain/routers/api" // 导入API接口包，注册具体的接口处理函数
 
@@ -51,19 +53,22 @@ func InitRouter(r *gin.Engine) *gin.Engine {
 	r.Use(CORSMiddleware())
 
 	// 静态文件服务 - 提供上传的文件访问
-	r.Static("/uploads", "./uploads")
+	uploadRoot := Init.GetUploadRoot()
+	r.Static("/uploads", uploadRoot)
 
 	// 专门为周报PDF文件提供静态访问
-	r.Static("/weekly-reports", "./uploads/weekly")
+	r.Static("/weekly-reports", filepath.Join(uploadRoot, "weekly"))
 
 	// 公开API组 - 不需要JWT认证的接口
 	// 这些接口可以匿名访问，主要用于用户登录和令牌刷新
 	publicAPI := r.Group("/api")
 	{
 		// 认证相关接口
-		publicAPI.POST("/login", api.Login)          // 用户登录接口
-		publicAPI.POST("/refresh", api.RefreshToken) // JWT令牌刷新接口
-		publicAPI.GET("/password/policy", api.GetPasswordPolicy) // 获取密码策略
+		publicAPI.POST("/login", api.Login)                           // 用户登录接口
+		publicAPI.POST("/login/qrcode/start", api.StartQrLogin)       // 启动扫码登录
+		publicAPI.POST("/login/qrcode/callback", api.QrLoginCallback) // 扫码登录回调
+		publicAPI.POST("/refresh", api.RefreshToken)                  // JWT令牌刷新接口
+		publicAPI.GET("/password/policy", api.GetPasswordPolicy)      // 获取密码策略
 
 		// 公开系统信息接口
 		publicAPI.GET("/system/info", api.GetPublicSystemInfo) // 获取公开的系统信息（公司名称等）
@@ -134,26 +139,32 @@ func InitRouter(r *gin.Engine) *gin.Engine {
 		vulnViewAPI := vulnAPI.Group("")
 		vulnViewAPI.Use(middleware.PermissionMiddleware("vuln:view"))
 		{
-			vulnViewAPI.GET("", api.GetVulnList)            // 获取漏洞列表
-			vulnViewAPI.GET("/stats", api.GetVulnStats)     // 获取漏洞统计信息
-			vulnViewAPI.GET("/:id", api.GetVuln)            // 获取漏洞详情
-			vulnViewAPI.GET("/:id/timeline", api.GetVulnTimeline) // 获取漏洞时间线
+			vulnViewAPI.GET("", api.GetVulnList)                                // 获取漏洞列表
+			vulnViewAPI.GET("/stats", api.GetVulnStats)                         // 获取漏洞统计信息
+			vulnViewAPI.GET("/:id", api.GetVuln)                                // 获取漏洞详情
+			vulnViewAPI.GET("/:id/timeline", api.GetVulnTimeline)               // 获取漏洞时间线
+			vulnViewAPI.GET("/:id/recommend-fixes", api.RecommendFixStrategies) // 推荐历史修复策略
+			vulnViewAPI.GET("/compliance/export", api.ExportComplianceReport)   // 导出合规模板报告
+			vulnViewAPI.POST("/export", api.ExportVulns)                        // 批量导出漏洞
+			vulnViewAPI.GET("/import/template", api.DownloadVulnTemplate)       // 下载漏洞导入模板
 		}
 
 		// 漏洞创建权限组 - 可以创建新漏洞
 		vulnCreateAPI := vulnAPI.Group("")
 		vulnCreateAPI.Use(middleware.PermissionMiddleware("vuln:create"))
 		{
-			vulnCreateAPI.POST("", api.CreateVuln) // 创建新漏洞
+			vulnCreateAPI.POST("", api.CreateVuln)         // 创建新漏洞
+			vulnCreateAPI.POST("/import", api.ImportVulns) // 批量导入漏洞
 		}
 
 		// 漏洞编辑权限组 - 可以修改漏洞信息
 		vulnEditAPI := vulnAPI.Group("")
 		vulnEditAPI.Use(middleware.PermissionMiddleware("vuln:edit"))
 		{
-			vulnEditAPI.PUT("/:id", api.UpdateVuln)               // 更新漏洞信息
-			vulnEditAPI.POST("/:id/comments", api.AddVulnComment) // 添加漏洞评论
-			vulnEditAPI.PUT("/:id/fix", api.FixVuln)              // 标记漏洞为已修复
+			vulnEditAPI.PUT("/:id", api.UpdateVuln)                                 // 更新漏洞信息
+			vulnEditAPI.POST("/:id/comments", api.AddVulnComment)                   // 添加漏洞评论
+			vulnEditAPI.POST("/:id/ai-fix-suggestion", api.GenerateAIFixSuggestion) // AI修复建议
+			vulnEditAPI.PUT("/:id/fix", api.FixVuln)                                // 标记漏洞为已修复
 		}
 
 		// 漏洞审核权限组 - 可以审核和复测漏洞
@@ -178,11 +189,11 @@ func InitRouter(r *gin.Engine) *gin.Engine {
 		assetViewAPI := assetAPI.Group("")
 		assetViewAPI.Use(middleware.PermissionMiddleware("asset:view"))
 		{
-			assetViewAPI.GET("", api.GetAssetList)          // 获取资产列表
-			assetViewAPI.GET("/stats", api.GetAssetStats)   // 获取资产统计信息
-			assetViewAPI.GET("/:id", api.GetAsset)          // 获取资产详情
-			assetViewAPI.GET("/groups", api.GetAssetGroups) // 获取资产组列表
-			assetViewAPI.POST("/export", api.ExportAssets)  // 批量导出资产
+			assetViewAPI.GET("", api.GetAssetList)                          // 获取资产列表
+			assetViewAPI.GET("/stats", api.GetAssetStats)                   // 获取资产统计信息
+			assetViewAPI.GET("/:id", api.GetAsset)                          // 获取资产详情
+			assetViewAPI.GET("/groups", api.GetAssetGroups)                 // 获取资产组列表
+			assetViewAPI.POST("/export", api.ExportAssets)                  // 批量导出资产
 			assetViewAPI.GET("/import/template", api.DownloadAssetTemplate) // 下载导入模板
 		}
 
@@ -216,6 +227,23 @@ func InitRouter(r *gin.Engine) *gin.Engine {
 		// 	knowledgeAPI.GET("", api.GetKnowledgeList)     // 获取知识库列表
 		// 	knowledgeAPI.GET("/:id", api.GetKnowledge)     // 获取知识库详情
 		// }
+
+		// 安全知识库模块 - 支撑安全知识管理
+		knowledgeAPI := authAPI.Group("/knowledge")
+		knowledgeViewAPI := knowledgeAPI.Group("")
+		knowledgeViewAPI.Use(middleware.PermissionMiddleware("knowledge:view"))
+		{
+			knowledgeViewAPI.GET("", api.GetKnowledgeList)
+			knowledgeViewAPI.GET("/recommend", api.RecommendKnowledge)
+		}
+
+		knowledgeEditAPI := knowledgeAPI.Group("")
+		knowledgeEditAPI.Use(middleware.PermissionMiddleware("knowledge:edit"))
+		{
+			knowledgeEditAPI.POST("", api.CreateKnowledge)
+			knowledgeEditAPI.PUT("/:id", api.UpdateKnowledge)
+			knowledgeEditAPI.DELETE("/:id", api.DeleteKnowledge)
+		}
 
 		// 项目管理模块 - 采用分层权限控制
 		projectAPI := authAPI.Group("/projects")
@@ -266,8 +294,8 @@ func InitRouter(r *gin.Engine) *gin.Engine {
 			systemConfigAPI.POST("/configs", api.CreateSystemConfig)        // 创建系统配置
 			systemConfigAPI.DELETE("/configs/:key", api.DeleteSystemConfig) // 删除系统配置
 			systemConfigAPI.POST("/email/test", api.TestEmailConfig)        // 测试邮件配置
-			systemConfigAPI.POST("/ldap/test", api.TestLDAPConfig)         // 测试LDAP连接
-			systemConfigAPI.POST("/ldap/sync", api.SyncLDAPUsers)          // 手动同步LDAP用户
+			systemConfigAPI.POST("/ldap/test", api.TestLDAPConfig)          // 测试LDAP连接
+			systemConfigAPI.POST("/ldap/sync", api.SyncLDAPUsers)           // 手动同步LDAP用户
 		}
 
 		// 系统日志权限组 - 可以查看操作日志
@@ -288,17 +316,19 @@ func InitRouter(r *gin.Engine) *gin.Engine {
 		weeklyReportAPI := systemAPI.Group("/weekly-report")
 		weeklyReportAPI.Use(middleware.PermissionMiddleware("system:config")) // 使用系统配置权限
 		{
-			weeklyReportAPI.GET("/data", api.GetWeeklyReportData)        // 获取周报数据
-			weeklyReportAPI.GET("/preview", api.PreviewWeeklyReportPDF)  // 预览周报PDF
-			weeklyReportAPI.GET("/download", api.DownloadWeeklyReportPDF) // 下载周报PDF
-			weeklyReportAPI.POST("/send", api.SendWeeklyReport)          // 手动发送周报
-			weeklyReportAPI.POST("/generate", api.ManualGenerateWeeklyReport) // 手动生成并发送周报
-			weeklyReportAPI.GET("/scheduler/status", api.GetSchedulerStatus) // 获取定时任务状态
+			weeklyReportAPI.GET("/data", api.GetWeeklyReportData)               // 获取周报数据
+			weeklyReportAPI.GET("/preview", api.PreviewWeeklyReportPDF)         // 预览周报PDF
+			weeklyReportAPI.GET("/download", api.DownloadWeeklyReportPDF)       // 下载周报PDF
+			weeklyReportAPI.POST("/send", api.SendWeeklyReport)                 // 手动发送周报
+			weeklyReportAPI.POST("/generate", api.ManualGenerateWeeklyReport)   // 手动生成并发送周报
+			weeklyReportAPI.GET("/scheduler/status", api.GetSchedulerStatus)    // 获取定时任务状态
 			weeklyReportAPI.POST("/scheduler/send", api.ManualSendWeeklyReport) // 手动触发定时发送
 
 			// 周报历史记录管理
-			weeklyReportAPI.GET("/history", api.GetWeeklyReportHistory)     // 获取周报历史记录
-			weeklyReportAPI.GET("/file/:id/preview", api.PreviewWeeklyReportFile) // 预览历史周报文件
+			weeklyReportAPI.GET("/history", api.GetWeeklyReportHistory)             // 获取周报历史记录
+			weeklyReportAPI.GET("/monthly/data", api.GetMonthlyReportData)          // 获取月报数据
+			weeklyReportAPI.GET("/yearly/data", api.GetYearlyReportData)            // 获取年报数据
+			weeklyReportAPI.GET("/file/:id/preview", api.PreviewWeeklyReportFile)   // 预览历史周报文件
 			weeklyReportAPI.GET("/file/:id/download", api.DownloadWeeklyReportFile) // 下载历史周报文件
 		}
 
@@ -309,7 +339,7 @@ func InitRouter(r *gin.Engine) *gin.Engine {
 		// 数据字典接口 - 所有已认证用户都可以访问
 		authAPI.GET("/dictionaries", api.GetDictionaries) // 获取数据字典
 
-    authAPI.GET("/roles", api.GetRoles)
+		authAPI.GET("/roles", api.GetRoles)
 
 		// 用户项目相关接口 - 所有已认证用户都可以访问
 		authAPI.GET("/user/projects", api.GetUserProjects) // 获取用户的项目列表
