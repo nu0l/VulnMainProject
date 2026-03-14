@@ -68,7 +68,7 @@ export default function UsersPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const isAdmin = currentUser?.role_id === 1;
-  const canViewUsers = currentUser?.role_id === 1 || currentUser?.role_id === 5;
+  const canViewUsers = currentUser?.role_id === 1;
 
   // 密码验证状态
     const [createPasswordValidation, setCreatePasswordValidation] = useState<PasswordValidationResult | null>(null);

@@ -4,7 +4,6 @@ import { Nav } from '@douyinfe/semi-ui';
 import {
   IconHome,
   IconFolderOpen,
-  IconUserGroup,
   IconSetting,
 } from '@douyinfe/semi-icons';
 import { useEffect, useState } from 'react';
@@ -64,11 +63,6 @@ export default function Sidebar({ selectedKey = 'home', onSelect }: SidebarProps
         icon: <IconSetting />
       },
       {
-        itemKey: 'users',
-        text: '用户管理',
-        icon: <IconUserGroup />
-      },
-      {
         itemKey: 'knowledge',
         text: '知识库',
         icon: <IconSetting />
@@ -84,24 +78,48 @@ export default function Sidebar({ selectedKey = 'home', onSelect }: SidebarProps
     if (user?.role_id === 1) {
       return [
         ...homeAndProject,
-        ...readOnlyMgmtItems,
         {
-          itemKey: 'settings',
-          text: '系统设置',
+          itemKey: 'assets',
+          text: '资产面板',
+          icon: <IconSetting />
+        },
+        {
+          itemKey: 'users',
+          text: '用户管理',
+          icon: <IconSetting />
+        },
+        {
+          itemKey: 'knowledge',
+          text: '知识库',
+          icon: <IconSetting />
+        },
+        {
+          itemKey: 'repeater',
+          text: '漏洞一键检测',
+          icon: <IconSetting />
+        },
+        {
+          itemKey: 'repeater',
+          text: '漏洞一键检测',
           icon: <IconSetting />
         }
       ];
     }
 
-    // 领导角色：只读管理视角
+    // 领导角色：只读管理视角（不含用户管理）
     if (user?.role_id === 5) {
       return [...homeAndProject, ...readOnlyMgmtItems];
     }
 
-    // 安全/研发工程师可访问知识库与检测模块
+    // 安全/研发工程师可访问资产、知识库与检测模块
     if (user?.role_id === 2 || user?.role_id === 3) {
       return [
         ...homeAndProject,
+        {
+          itemKey: 'assets',
+          text: '资产面板',
+          icon: <IconSetting />
+        },
         {
           itemKey: 'knowledge',
           text: '知识库',

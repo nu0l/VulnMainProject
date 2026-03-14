@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Card, Table, Tag, Typography, Button, Tabs, Modal } from '@douyinfe/semi-ui';
-import { vulnApi, VULN_SEVERITIES, knowledgeApi, type Vulnerability } from '@/lib/api';
-import MarkdownViewer from '@/components/MarkdownViewer';
+import { Card, Table, Tag, Typography, Button, Tabs } from '@douyinfe/semi-ui';
+import { vulnApi, VULN_SEVERITIES, knowledgeApi, authUtils, type Vulnerability } from '@/lib/api';
+import VulnDetailModal from '@/components/VulnDetailModal';
 
 const { Title, Text } = Typography;
 
@@ -25,6 +25,7 @@ export default function KnowledgePage() {
 
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewVuln, setPreviewVuln] = useState<Vulnerability | null>(null);
+  const currentUser = authUtils.getCurrentUser();
 
   const [alertLoading, setAlertLoading] = useState(false);
   const [alertRows, setAlertRows] = useState<AlertItem[]>([]);
@@ -33,7 +34,14 @@ export default function KnowledgePage() {
   const loadInternalVulns = async (page = 1, pageSize = vulnPagination.pageSize) => {
     setVulnLoading(true);
     try {
-      const res = await vulnApi.getVulnList({ page, page_size: pageSize });
+      const params: Record<string, unknown> = { page, page_size: pageSize };
+      if (currentUser?.role_id === 3 && currentUser?.id) {
+        params.assignee_id = currentUser.id;
+      }
+      if (currentUser?.role_id === 2 && currentUser?.id) {
+        params.reporter_id = currentUser.id;
+      }
+      const res = await vulnApi.getVulnList(params as any);
       const data = res.data;
       const list = data?.vulnerabilities || data?.vulns || [];
       setVulnRows(list);
@@ -166,32 +174,8 @@ export default function KnowledgePage() {
         </Tabs>
       </Card>
 
-      <Modal
-        title="漏洞预览"
-        visible={previewVisible}
-        onCancel={() => setPreviewVisible(false)}
-        footer={null}
-        width={1000}
-      >
-        {previewVuln && (
-          <div>
-            <Title heading={5}>{previewVuln.title}</Title>
-            <div style={{ marginBottom: 12 }}>
-              <Tag color={VULN_SEVERITIES.find((s) => s.value === previewVuln.severity)?.color || 'grey'}>
-                {VULN_SEVERITIES.find((s) => s.value === previewVuln.severity)?.label || previewVuln.severity}
-              </Tag>
-            </div>
-            <div style={{ marginBottom: 12 }}><Text strong>漏洞详情</Text></div>
-            <MarkdownViewer content={previewVuln.description || ''} />
-            {previewVuln.request_packet && (
-              <>
-                <div style={{ marginTop: 16, marginBottom: 8 }}><Text strong>请求数据包</Text></div>
-                <pre style={{ background: '#0f172a', color: '#e2e8f0', padding: 12, borderRadius: 6, whiteSpace: 'pre-wrap' }}>{previewVuln.request_packet}</pre>
-              </>
-            )}
-          </div>
-        )}
-      </Modal>
+      <VulnDetailModal visible={previewVisible} onCancel={() => setPreviewVisible(false)} vuln={previewVuln} />
+
     </div>
   );
 }

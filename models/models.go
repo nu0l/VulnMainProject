@@ -216,6 +216,7 @@ func InitDefaultData() error {
 		"dashboard:view",                                           // 首页查看权限
 		"project:view",                                             // 项目查看权限（查看自己名下的项目）
 		"vuln:view", "vuln:edit", "vuln:fix", "vuln:change_status", // 漏洞查看、编辑、修复权限（只能处理分配给自己的漏洞）
+		"asset:view", "asset:create", "asset:edit", // 资产面板增改查
 		"knowledge:view", // 可查看知识库推荐
 	}
 	assignRolePermissions("dev_engineer", devEngineerPermissions)
@@ -224,7 +225,6 @@ func InitDefaultData() error {
 	leaderPermissions := []string{
 		"dashboard:view",
 		"project:view",
-		"user:view",
 		"vuln:view",
 		"asset:view",
 		"knowledge:view",
