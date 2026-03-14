@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import type { Vulnerability } from '@/lib/api';
+import React, { useEffect, useMemo, useState } from 'react';
+import type { Vulnerability, VulnTimeline } from '@/lib/api';
+import { vulnApi } from '@/lib/api';
 import { Modal, Button, Tag, Typography } from '@douyinfe/semi-ui';
 import MarkdownViewer from './MarkdownViewer';
+import VulnTimelineViewer from './VulnTimelineViewer';
 
 const { Title, Text } = Typography;
 
@@ -13,24 +15,94 @@ interface VulnDetailModalProps {
   vuln: Vulnerability | null;
 }
 
-export default function VulnDetailModal({ visible, onCancel, vuln }: VulnDetailModalProps) {
-  // 控制页面滚动
-  useEffect(() => {
-    if (visible) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'auto';
-    }
+const statusColorMap: Record<string, string> = {
+  pending: 'orange',
+  confirmed: 'red',
+  fixing: 'blue',
+  fixed: 'green',
+  retesting: 'purple',
+  completed: 'green',
+  ignored: 'grey',
+  rejected: 'pink',
+};
 
+const severityColorMap: Record<string, string> = {
+  critical: 'red',
+  high: 'orange',
+  medium: 'yellow',
+  low: 'blue',
+  info: 'grey',
+};
+
+function formatDate(value?: string): string {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '-';
+  }
+  return date.toLocaleDateString('zh-CN');
+}
+
+function formatDeadlineRemaining(value?: string): string {
+  if (!value) return '';
+  const now = new Date();
+  const deadline = new Date(value);
+  if (Number.isNaN(deadline.getTime())) {
+    return '';
+  }
+
+  const days = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  if (days > 0) return `${days}天后`;
+  if (days === 0) return '今天到期';
+  return `已逾期${Math.abs(days)}天`;
+}
+
+export default function VulnDetailModal({ visible, onCancel, vuln }: VulnDetailModalProps) {
+  const [timelineLoading, setTimelineLoading] = useState(false);
+  const [timeline, setTimeline] = useState<VulnTimeline[]>([]);
+
+  useEffect(() => {
+    document.body.style.overflow = visible ? 'hidden' : 'auto';
     return () => {
       document.body.style.overflow = 'auto';
     };
   }, [visible]);
 
-  const handleCancel = () => {
-    document.body.style.overflow = 'auto';
-    onCancel();
-  };
+  useEffect(() => {
+    if (!visible || !vuln?.id) {
+      setTimeline([]);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadTimeline = async () => {
+      setTimelineLoading(true);
+      try {
+        const res = await vulnApi.getVulnTimeline(vuln.id);
+        if (!cancelled && res.code === 200) {
+          setTimeline(res.data || []);
+        }
+      } catch {
+        if (!cancelled) {
+          setTimeline([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setTimelineLoading(false);
+        }
+      }
+    };
+
+    loadTimeline();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [visible, vuln?.id]);
+
+  const fixDeadlineText = useMemo(() => formatDate(vuln?.fix_deadline), [vuln?.fix_deadline]);
+  const fixDeadlineRemaining = useMemo(() => formatDeadlineRemaining(vuln?.fix_deadline), [vuln?.fix_deadline]);
 
   if (!vuln) return null;
 
@@ -38,63 +110,30 @@ export default function VulnDetailModal({ visible, onCancel, vuln }: VulnDetailM
     <Modal
       title="漏洞详情"
       visible={visible}
-      onCancel={handleCancel}
-      footer={
-        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <Button onClick={handleCancel}>关闭</Button>
-        </div>
-      }
+      onCancel={onCancel}
+      footer={<Button onClick={onCancel}>关闭</Button>}
       width={1400}
-      height={900}
-      centered={true}
-      maskClosable={true}
-      bodyStyle={{
-        padding: '24px',
-        height: '800px',
-        overflow: 'visible'
-      }}
-      style={{
-        top: 0,
-        paddingBottom: 0
-      }}
+      centered
+      maskClosable
+      bodyStyle={{ padding: '24px', height: '800px', overflow: 'visible' }}
+      style={{ top: 0, paddingBottom: 0 }}
     >
-      <div style={{
-        display: 'flex',
-        gap: '32px',
-        minHeight: '800px',
-        lineHeight: '1.6'
-      }}>
-        {/* 左侧：漏洞信息 */}
-        <div style={{
-          flex: '0 0 500px',
-          paddingRight: '32px',
-          borderRight: '2px dashed var(--semi-color-border)',
-          overflowY: 'auto',
-          maxHeight: '800px'
-        }}>
-          {/* 基础信息 */}
+      <div style={{ display: 'flex', gap: '32px', minHeight: '800px', lineHeight: '1.6' }}>
+        <div style={{ flex: '0 0 500px', paddingRight: '32px', borderRight: '2px dashed var(--semi-color-border)', overflowY: 'auto', maxHeight: '800px' }}>
           <div style={{ marginBottom: '24px' }}>
-            <Title heading={5} style={{ marginBottom: '16px', color: 'var(--semi-color-primary)' }}>
-              基础信息
-            </Title>
-
-            {/* 漏洞标题 - 单独一行 */}
+            <Title heading={5} style={{ marginBottom: '16px', color: 'var(--semi-color-primary)' }}>基础信息</Title>
             <div style={{ marginBottom: '16px', padding: '12px', backgroundColor: 'var(--semi-color-fill-0)', borderRadius: '6px' }}>
               <Text type="secondary" size="small">漏洞标题：</Text>
               <div style={{ marginTop: '4px' }}><Text strong style={{ fontSize: '16px' }}>{vuln.title}</Text></div>
             </div>
-
-            {/* 基础属性 - 两列布局 */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
               <div style={{ padding: '12px', backgroundColor: 'var(--semi-color-fill-0)', borderRadius: '6px' }}>
                 <Text type="secondary" size="small">漏洞类型：</Text>
-                <div style={{ marginTop: '4px' }}><Text strong>{vuln.vuln_type}</Text></div>
+                <div style={{ marginTop: '4px' }}><Text strong>{vuln.vuln_type || '-'}</Text></div>
               </div>
               <div style={{ padding: '12px', backgroundColor: 'var(--semi-color-fill-0)', borderRadius: '6px' }}>
                 <Text type="secondary" size="small">严重程度：</Text>
-                <div style={{ marginTop: '6px' }}>
-                  <Tag color="red" size="large">{vuln.severity}</Tag>
-                </div>
+                <div style={{ marginTop: '6px' }}><Tag color={severityColorMap[vuln.severity] || 'grey'} size="large">{vuln.severity || '-'}</Tag></div>
               </div>
               {vuln.cve_id && (
                 <div style={{ padding: '12px', backgroundColor: 'var(--semi-color-fill-0)', borderRadius: '6px' }}>
@@ -103,34 +142,19 @@ export default function VulnDetailModal({ visible, onCancel, vuln }: VulnDetailM
                 </div>
               )}
             </div>
-
-            {/* 状态和期限 - 一行两列布局 */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
               <div style={{ padding: '12px', backgroundColor: 'var(--semi-color-fill-0)', borderRadius: '6px' }}>
                 <Text type="secondary" size="small">当前状态：</Text>
-                <div style={{ marginTop: '6px' }}>
-                  <Tag color="blue" size="large">{vuln.status}</Tag>
-                </div>
+                <div style={{ marginTop: '6px' }}><Tag color={statusColorMap[vuln.status] || 'grey'} size="large">{vuln.status || '-'}</Tag></div>
               </div>
               <div style={{ padding: '12px', backgroundColor: 'var(--semi-color-fill-0)', borderRadius: '6px' }}>
                 <Text type="secondary" size="small">修复期限：</Text>
-                <div style={{ marginTop: '6px' }}>
-                  <Text strong style={{
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    color: '#1890ff',
-                    padding: '4px 12px',
-                    borderRadius: '4px',
-                    backgroundColor: 'rgba(24, 144, 255, 0.1)',
-                  }}>
-                    2024-12-31
-                  </Text>
-                  <Text type="secondary" size="small" style={{ marginLeft: '8px' }}>30天后</Text>
+                <div style={{ marginTop: '4px' }}>
+                  <Text strong>{fixDeadlineText}</Text>
+                  {fixDeadlineRemaining && <Text type="secondary" size="small" style={{ marginLeft: '8px' }}>{fixDeadlineRemaining}</Text>}
                 </div>
               </div>
             </div>
-
-            {/* 可选信息 */}
             {vuln.vuln_url && (
               <div style={{ padding: '12px', backgroundColor: 'var(--semi-color-fill-0)', borderRadius: '6px' }}>
                 <Text type="secondary" size="small">漏洞地址：</Text>
@@ -139,270 +163,75 @@ export default function VulnDetailModal({ visible, onCancel, vuln }: VulnDetailM
             )}
           </div>
 
-          {/* 关联信息 */}
           <div style={{ marginBottom: '24px' }}>
-            <Title heading={5} style={{ marginBottom: '16px', color: 'var(--semi-color-primary)' }}>
-              关联信息
-            </Title>
-
-            {/* 项目信息 */}
+            <Title heading={5} style={{ marginBottom: '16px', color: 'var(--semi-color-primary)' }}>关联信息</Title>
             <div style={{ marginBottom: '16px', padding: '12px', backgroundColor: 'var(--semi-color-fill-0)', borderRadius: '6px' }}>
               <Text type="secondary" size="small">所属项目：</Text>
-              <div style={{ marginTop: '4px' }}><Text strong>{vuln.project?.name || '未知'}</Text></div>
+              <div style={{ marginTop: '4px' }}><Text strong>{vuln.project?.name || '-'}</Text></div>
             </div>
-
-            {/* 人员信息 */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div style={{ padding: '12px', backgroundColor: 'var(--semi-color-fill-0)', borderRadius: '6px' }}>
                 <Text type="secondary" size="small">提交人：</Text>
-                <div style={{ marginTop: '4px' }}><Text strong>{vuln.reporter?.real_name || '未知'}</Text></div>
+                <div style={{ marginTop: '4px' }}><Text strong>{vuln.reporter?.real_name || vuln.reporter?.username || '-'}</Text></div>
               </div>
               <div style={{ padding: '12px', backgroundColor: 'var(--semi-color-fill-0)', borderRadius: '6px' }}>
                 <Text type="secondary" size="small">指派人：</Text>
-                <div style={{ marginTop: '4px' }}><Text strong>{vuln.assignee?.real_name || '未指派'}</Text></div>
+                <div style={{ marginTop: '4px' }}><Text strong>{vuln.assignee?.real_name || vuln.assignee?.username || '未指派'}</Text></div>
               </div>
             </div>
           </div>
 
-          {/* 处理时间线 */}
-          <div>
-            <Title heading={5} style={{ marginBottom: '16px', color: 'var(--semi-color-primary)' }}>
-              处理时间线
-            </Title>
-            <div style={{
-              padding: '16px 16px 8px 16px',
-              border: '1px solid var(--semi-color-border)',
-              borderRadius: '6px',
-              backgroundColor: 'var(--semi-color-bg-0)',
-              width: '100%',
-              maxWidth: '468px',
-              minHeight: '140px',
-              overflow: 'visible'
-            }}>
-              {/* 演示时间线数据 */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '16px',
-                overflowX: 'auto',
-                overflowY: 'visible',
-                padding: '4px 0 20px 0',
-                scrollBehavior: 'smooth',
-                minHeight: '110px',
-                height: 'auto'
-              }}>
-                {/* 创建节点 */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    minWidth: '85px',
-                    maxWidth: '100px',
-                    padding: '8px 4px 10px 4px',
-                    borderRadius: '6px',
-                    backgroundColor: 'white',
-                    border: '2px solid #1890ff',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                    position: 'relative',
-                    flexShrink: 0,
-                    height: 'auto',
-                    overflow: 'visible'
-                  }}>
-                    <div style={{
-                      width: '8px',
-                      height: '8px',
-                      borderRadius: '50%',
-                      backgroundColor: '#1890ff',
-                      marginBottom: '3px',
-                      boxShadow: '0 0 0 2px rgba(24, 144, 255, 0.2)'
-                    }} />
-                    <Text size="small" strong style={{ marginBottom: '1px', color: '#1890ff', textAlign: 'center', fontSize: '11px', display: 'block' }}>
-                      创建
-                    </Text>
-                    <Text size="small" type="tertiary" style={{ textAlign: 'center', fontSize: '9px', marginBottom: '1px', display: 'block' }}>
-                      12-01
-                    </Text>
-                    <Text size="small" type="tertiary" style={{ textAlign: 'center', fontSize: '8px', display: 'block', marginBottom: '1px' }}>
-                      09:30
-                    </Text>
-                    <Text size="small" type="secondary" style={{ textAlign: 'center', fontSize: '8px', marginTop: '1px', display: 'block' }}>
-                      张三
-                    </Text>
-                  </div>
-
-                  {/* 连接线 */}
-                  <div style={{ width: '24px', height: '2px', backgroundColor: '#d9d9d9', flexShrink: 0 }} />
-
-                  {/* 分配节点 */}
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    minWidth: '85px',
-                    maxWidth: '100px',
-                    padding: '8px 4px 10px 4px',
-                    borderRadius: '6px',
-                    backgroundColor: 'white',
-                    border: '2px solid #fa8c16',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                    position: 'relative',
-                    flexShrink: 0,
-                    height: 'auto',
-                    overflow: 'visible'
-                  }}>
-                    <div style={{
-                      width: '8px',
-                      height: '8px',
-                      borderRadius: '50%',
-                      backgroundColor: '#fa8c16',
-                      marginBottom: '3px',
-                      boxShadow: '0 0 0 2px rgba(250, 140, 22, 0.2)'
-                    }} />
-                    <Text size="small" strong style={{ marginBottom: '1px', color: '#fa8c16', textAlign: 'center', fontSize: '11px', display: 'block' }}>
-                      分配
-                    </Text>
-                    <Text size="small" type="tertiary" style={{ textAlign: 'center', fontSize: '9px', marginBottom: '1px', display: 'block' }}>
-                      12-01
-                    </Text>
-                    <Text size="small" type="tertiary" style={{ textAlign: 'center', fontSize: '8px', display: 'block', marginBottom: '1px' }}>
-                      10:15
-                    </Text>
-                    <Text size="small" type="secondary" style={{ textAlign: 'center', fontSize: '8px', marginTop: '1px', display: 'block' }}>
-                      李四
-                    </Text>
-                  </div>
-
-                  {/* 连接线 */}
-                  <div style={{ width: '24px', height: '2px', backgroundColor: '#d9d9d9', flexShrink: 0 }} />
-
-                  {/* 状态变更节点 */}
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    minWidth: '85px',
-                    maxWidth: '100px',
-                    padding: '8px 4px 10px 4px',
-                    borderRadius: '6px',
-                    backgroundColor: 'white',
-                    border: '2px solid #52c41a',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                    position: 'relative',
-                    flexShrink: 0,
-                    height: 'auto',
-                    overflow: 'visible'
-                  }}>
-                    <div style={{
-                      width: '8px',
-                      height: '8px',
-                      borderRadius: '50%',
-                      backgroundColor: '#52c41a',
-                      marginBottom: '3px',
-                      boxShadow: '0 0 0 2px rgba(82, 196, 26, 0.2)'
-                    }} />
-                    <Text size="small" strong style={{ marginBottom: '1px', color: '#52c41a', textAlign: 'center', fontSize: '11px', display: 'block' }}>
-                      修复中
-                    </Text>
-                    <Text size="small" type="tertiary" style={{ textAlign: 'center', fontSize: '9px', marginBottom: '1px', display: 'block' }}>
-                      12-02
-                    </Text>
-                    <Text size="small" type="tertiary" style={{ textAlign: 'center', fontSize: '8px', display: 'block', marginBottom: '1px' }}>
-                      14:20
-                    </Text>
-                    <Text size="small" type="secondary" style={{ textAlign: 'center', fontSize: '8px', marginTop: '1px', display: 'block' }}>
-                      王五
-                    </Text>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 左侧底部占位，确保时间线内容不会贴着底部 */}
-          <div style={{ height: '24px' }} />
+          <VulnTimelineViewer
+            timeline={timeline}
+            loading={timelineLoading}
+            maxWidth={468}
+            showDragHint
+          />
         </div>
 
-        {/* 右侧：漏洞详情 */}
-        <div style={{
-          flex: 1,
-          paddingLeft: '32px',
-          overflowY: 'auto',
-          maxHeight: '800px'
-        }}>
-          {/* 详细描述 */}
+        <div style={{ flex: 1, paddingLeft: '32px', overflowY: 'auto', maxHeight: '800px' }}>
           {vuln.description && (
             <div style={{ marginBottom: '24px' }}>
-              <Title heading={5} style={{ marginBottom: '16px', color: 'var(--semi-color-primary)' }}>
-                漏洞详情
-              </Title>
-              <div style={{ 
-                padding: '16px', 
-                backgroundColor: '#f8f9fa', 
-                borderRadius: '6px',
-                border: '1px solid #e9ecef',
-              }}>
+              <Title heading={5} style={{ marginBottom: '16px', color: 'var(--semi-color-primary)' }}>漏洞详情</Title>
+              <div style={{ padding: '16px', backgroundColor: '#f8f9fa', borderRadius: '6px', border: '1px solid #e9ecef' }}>
                 <MarkdownViewer content={vuln.description} />
               </div>
             </div>
           )}
 
-          {/* 修复建议 */}
           {vuln.fix_suggestion && (
             <div style={{ marginBottom: '24px' }}>
-              <Title heading={5} style={{ marginBottom: '16px', color: 'var(--semi-color-primary)' }}>
-                修复建议
-              </Title>
-              <div style={{ 
-                padding: '16px', 
-                backgroundColor: '#f0f9ff', 
-                borderRadius: '6px',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word'
-              }}>
+              <Title heading={5} style={{ marginBottom: '16px', color: 'var(--semi-color-primary)' }}>修复建议</Title>
+              <div style={{ padding: '16px', backgroundColor: '#f0f9ff', borderRadius: '6px', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                 <Text>{vuln.fix_suggestion}</Text>
               </div>
             </div>
           )}
 
-          {/* 忽略原因 */}
+          <div style={{ marginBottom: '24px' }}>
+            <Title heading={5} style={{ marginBottom: '16px', color: 'var(--semi-color-primary)' }}>请求数据包</Title>
+            <div style={{ padding: '16px', backgroundColor: '#fafafa', borderRadius: '6px', border: '1px solid #eee', whiteSpace: 'pre-wrap', wordBreak: 'break-all', maxHeight: '240px', overflowY: 'auto' }}>
+              <Text style={{ fontFamily: 'monospace' }}>{vuln.request_packet || '暂无数据包'}</Text>
+            </div>
+          </div>
+
           {vuln.ignore_reason && (
             <div style={{ marginBottom: '24px' }}>
-              <Title heading={5} style={{ marginBottom: '16px', color: 'var(--semi-color-primary)' }}>
-                忽略原因
-              </Title>
-              <div style={{ 
-                padding: '16px', 
-                backgroundColor: '#fef2f2', 
-                borderRadius: '6px',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word'
-              }}>
+              <Title heading={5} style={{ marginBottom: '16px', color: 'var(--semi-color-primary)' }}>忽略原因</Title>
+              <div style={{ padding: '16px', backgroundColor: '#fef2f2', borderRadius: '6px', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                 <Text>{vuln.ignore_reason}</Text>
               </div>
             </div>
           )}
 
-          {/* 复测结果 */}
           {vuln.retest_result && (
             <div style={{ marginBottom: '24px' }}>
-              <Title heading={5} style={{ marginBottom: '16px', color: 'var(--semi-color-primary)' }}>
-                复测结果
-              </Title>
-              <div style={{
-                padding: '16px',
-                backgroundColor: '#f0fdf4',
-                borderRadius: '6px',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word'
-              }}>
+              <Title heading={5} style={{ marginBottom: '16px', color: 'var(--semi-color-primary)' }}>复测结果</Title>
+              <div style={{ padding: '16px', backgroundColor: '#f0fdf4', borderRadius: '6px', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                 <Text>{vuln.retest_result}</Text>
               </div>
             </div>
           )}
-
-          {/* 右侧底部占位，确保内容不会贴着底部 */}
-          <div style={{ height: '24px' }} />
         </div>
       </div>
     </Modal>
