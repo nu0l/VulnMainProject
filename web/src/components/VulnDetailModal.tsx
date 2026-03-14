@@ -163,7 +163,7 @@ export default function VulnDetailModal({
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
               <div style={{ padding: '12px', backgroundColor: 'var(--semi-color-fill-0)', borderRadius: '6px' }}>
                 <Text type="secondary" size="small">漏洞类型：</Text>
-                <div style={{ marginTop: '4px' }}><Text strong>{vuln.vuln_type}</Text></div>
+                <div style={{ marginTop: '4px' }}><Text strong>{vuln.vuln_type || '-'}</Text></div>
               </div>
               <div style={{ padding: '12px', backgroundColor: 'var(--semi-color-fill-0)', borderRadius: '6px' }}>
                 <Text type="secondary" size="small">严重程度：</Text>
@@ -224,7 +224,7 @@ export default function VulnDetailModal({
 
             <div style={{ marginBottom: '16px', padding: '12px', backgroundColor: 'var(--semi-color-fill-0)', borderRadius: '6px' }}>
               <Text type="secondary" size="small">所属项目：</Text>
-              <div style={{ marginTop: '4px' }}><Text strong>{vuln.project?.name || '未知'}</Text></div>
+              <div style={{ marginTop: '4px' }}><Text strong>{vuln.project?.name || '-'}</Text></div>
             </div>
 
             <div style={{ marginBottom: '16px', padding: '12px', backgroundColor: 'var(--semi-color-fill-0)', borderRadius: '6px' }}>
@@ -235,7 +235,7 @@ export default function VulnDetailModal({
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div style={{ padding: '12px', backgroundColor: 'var(--semi-color-fill-0)', borderRadius: '6px' }}>
                 <Text type="secondary" size="small">提交人：</Text>
-                <div style={{ marginTop: '4px' }}><Text strong>{vuln.reporter?.real_name || '未知'}</Text></div>
+                <div style={{ marginTop: '4px' }}><Text strong>{vuln.reporter?.real_name || vuln.reporter?.username || '-'}</Text></div>
               </div>
               <div style={{ padding: '12px', backgroundColor: 'var(--semi-color-fill-0)', borderRadius: '6px' }}>
                 <Text type="secondary" size="small">指派人：</Text>
