@@ -3,13 +3,19 @@
 package utils
 
 import (
+	"crypto/rand"        // 导入安全随机数包，用于生成临时密钥
+	"encoding/base64"    // 导入base64编码包，用于输出可存储密钥
 	"errors"             // 导入错误处理包
+	"log"                // 导入日志包，用于输出安全告警
+	"os"                 // 导入操作系统包，用于读取环境变量
 	"strconv"            // 导入字符串转换包，用于配置值转换
+	"strings"            // 导入字符串处理包，用于配置值清洗
+	"sync"               // 导入同步包，用于一次性初始化密钥
 	"time"               // 导入时间包，用于处理过期时间
 	Init "vulnmain/Init" // 导入初始化包，获取数据库连接
 	"vulnmain/models"    // 导入模型包，使用系统配置模型
 
-	"github.com/dgrijalva/jwt-go" // 导入JWT处理包
+	"github.com/golang-jwt/jwt/v4" // 导入JWT处理包
 )
 
 // Claims结构体定义JWT声明信息
@@ -21,19 +27,52 @@ type Claims struct {
 	jwt.StandardClaims        // JWT标准声明，包含过期时间等
 }
 
+var (
+	jwtSecretOnce sync.Once
+	jwtSecret     string
+)
+
 // GetJWTSecret函数获取JWT签名密钥
-// 从系统配置中读取密钥，如果不存在则返回默认值
+// 优先级：数据库配置 > 环境变量 > 进程内随机密钥（仅应急）
 func GetJWTSecret() string {
-	// 获取数据库连接
+	jwtSecretOnce.Do(func() {
+		jwtSecret = resolveJWTSecret()
+	})
+	return jwtSecret
+}
+
+func resolveJWTSecret() string {
+	// 1) 优先使用数据库配置，便于运行期通过系统配置管理
 	db := Init.GetDB()
 	var config models.SystemConfig
-	// 查询JWT密钥配置
-	if err := db.Where("`key` = ?", "auth.jwt.secret").First(&config).Error; err != nil {
-		// 如果没有找到配置，返回默认密钥
-		return "vulnmain_default_secret"
+	if err := db.Where("`key` = ?", "auth.jwt.secret").First(&config).Error; err == nil {
+		if secret := strings.TrimSpace(config.Value); secret != "" {
+			return secret
+		}
 	}
-	// 返回配置中的密钥值
-	return config.Value
+
+	// 2) 其次使用环境变量，方便容器/部署场景安全注入
+	for _, key := range []string{"AUTH_JWT_SECRET", "JWT_SECRET"} {
+		if value := strings.TrimSpace(os.Getenv(key)); value != "" {
+			return value
+		}
+	}
+
+	// 3) 最后回退到进程级随机密钥（重启会失效），避免固定弱默认值
+	secret, err := generateRandomJWTSecret()
+	if err != nil {
+		log.Panicf("[FATAL] auth.jwt.secret/AUTH_JWT_SECRET 未配置且随机密钥生成失败: %v", err)
+	}
+	log.Printf("[WARN] auth.jwt.secret/AUTH_JWT_SECRET 未配置，已使用进程级随机JWT密钥；服务重启后旧Token将失效")
+	return secret
+}
+
+func generateRandomJWTSecret() (string, error) {
+	buf := make([]byte, 32)
+	if _, err := rand.Read(buf); err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(buf), nil
 }
 
 // GetJWTExpire函数获取JWT过期时间

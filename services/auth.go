@@ -11,6 +11,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"            // 导入错误处理包
 	"time"               // 导入时间包，用于处理登录时间
 	Init "vulnmain/Init" // 导入初始化包，获取数据库连接
@@ -166,7 +167,7 @@ func (s *AuthService) RefreshToken(tokenString string) (*LoginResponse, error) {
 		Token:       newToken,
 		User:        &user,
 		Permissions: permissions,
-		ExpiresIn:   int64(utils.GetJWTExpire() * 3600),
+		ExpiresIn:   int64(utils.GetJWTExpire().Seconds()),
 	}, nil
 }
 
@@ -327,18 +328,20 @@ func (s *AuthService) QrLoginCallback(req *QrLoginCallbackRequest) (*LoginRespon
 	if identity == "" {
 		return nil, errors.New("provider_user_id 不能为空")
 	}
-
-	username := strings.TrimSpace(req.Username)
-	if username == "" {
-		username = "qr_" + identity
+	identity = normalizeProviderIdentity(identity)
+	if identity == "" {
+		return nil, errors.New("provider_user_id 格式非法")
 	}
+
+	// 使用 provider_user_id 派生唯一用户名，避免客户端传入任意用户名造成越权登录
+	username := "qr_" + identity
 	email := strings.TrimSpace(req.Email)
 	if email == "" {
 		email = fmt.Sprintf("%s@qrcode.local", username)
 	}
 
 	var user models.User
-	if err := db.Preload("Role.Permissions").Where("username = ? OR email = ?", username, email).First(&user).Error; err != nil {
+	if err := db.Preload("Role.Permissions").Where("username = ?", username).First(&user).Error; err != nil {
 		if s.getSystemConfigValue("auth.qrcode.auto_import_user", "true") != "true" {
 			return nil, errors.New("扫码用户不存在，请联系管理员先创建或开启自动导入")
 		}
@@ -366,6 +369,8 @@ func (s *AuthService) QrLoginCallback(req *QrLoginCallbackRequest) (*LoginRespon
 		if errReload := db.Preload("Role.Permissions").Where("id = ?", user.ID).First(&user).Error; errReload != nil {
 			return nil, errors.New("加载扫码用户失败")
 		}
+	} else if user.Source != "api" {
+		return nil, errors.New("该账号不允许扫码登录")
 	}
 
 	now := time.Now().Truncate(time.Second)
@@ -388,4 +393,12 @@ func (s *AuthService) QrLoginCallback(req *QrLoginCallbackRequest) (*LoginRespon
 		Permissions: permissions,
 		ExpiresIn:   int64(utils.GetJWTExpire().Seconds()),
 	}, nil
+}
+
+var providerIdentityPattern = regexp.MustCompile(`[^a-zA-Z0-9._-]`)
+
+func normalizeProviderIdentity(identity string) string {
+	cleaned := providerIdentityPattern.ReplaceAllString(strings.TrimSpace(identity), "_")
+	cleaned = strings.Trim(cleaned, "._-")
+	return cleaned
 }
