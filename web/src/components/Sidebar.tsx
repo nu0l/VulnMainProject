@@ -20,9 +20,13 @@ interface User {
   role_id: number;
 }
 
+interface NavSelectData {
+  itemKey?: string;
+}
+
 interface SidebarProps {
   selectedKey?: string;
-  onSelect?: (data: any) => void;
+  onSelect?: (data: NavSelectData) => void;
 }
 
 export default function Sidebar({ selectedKey = 'home', onSelect }: SidebarProps) {
@@ -94,11 +98,6 @@ export default function Sidebar({ selectedKey = 'home', onSelect }: SidebarProps
           icon: <IconSetting />
         },
         {
-          itemKey: 'knowledge',
-          text: '知识库',
-          icon: <IconSetting />
-        },
-        {
           itemKey: 'settings',
           text: '系统设置',
           icon: <IconSetting />
@@ -136,7 +135,7 @@ export default function Sidebar({ selectedKey = 'home', onSelect }: SidebarProps
     return homeAndProject;
   };
 
-  const handleSelect = (data: any) => {
+  const handleSelect = (data: NavSelectData) => {
     if (onSelect) {
       onSelect(data);
     }
@@ -158,7 +157,7 @@ export default function Sidebar({ selectedKey = 'home', onSelect }: SidebarProps
           height: 'calc(100vh - 80px)',
           paddingTop: '24px'
         }}
-        renderWrapper={({ itemElement, isSubNav, isInSubNav, props }) => {
+        renderWrapper={({ itemElement }) => {
           return (
             <div style={{ padding: '0 12px' }}>
               {itemElement}
@@ -190,21 +189,3 @@ export default function Sidebar({ selectedKey = 'home', onSelect }: SidebarProps
     </div>
   );
 }
-
-// 获取角色显示名称
-function getRoleDisplayName(roleId: number): string {
-  switch (roleId) {
-    case 1:
-      return '超级管理员';
-    case 2:
-      return '安全工程师';
-    case 3:
-      return '研发工程师';
-    case 4:
-      return '普通用户';
-    case 5:
-      return '领导';
-    default:
-      return '未知角色';
-  }
-} 
