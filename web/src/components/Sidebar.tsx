@@ -66,11 +66,6 @@ export default function Sidebar({ selectedKey = 'home', onSelect }: SidebarProps
         itemKey: 'knowledge',
         text: '知识库',
         icon: <IconSetting />
-      },
-      {
-        itemKey: 'repeater',
-        text: '漏洞一键检测',
-        icon: <IconSetting />
       }
     ];
 
@@ -99,8 +94,13 @@ export default function Sidebar({ selectedKey = 'home', onSelect }: SidebarProps
           icon: <IconSetting />
         },
         {
-          itemKey: 'repeater',
-          text: '漏洞一键检测',
+          itemKey: 'knowledge',
+          text: '知识库',
+          icon: <IconSetting />
+        },
+        {
+          itemKey: 'settings',
+          text: '系统设置',
           icon: <IconSetting />
         }
       ];

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Card, Table, Tag, Typography, Button, Tabs } from '@douyinfe/semi-ui';
+import { IconEyeOpened } from '@douyinfe/semi-icons';
 import { vulnApi, VULN_SEVERITIES, knowledgeApi, authUtils, type Vulnerability } from '@/lib/api';
 import VulnDetailModal from '@/components/VulnDetailModal';
 
@@ -104,8 +105,17 @@ export default function KnowledgePage() {
       render: (v: string) => v ? new Date(v).toLocaleString() : '-'
     },
     {
-      title: '操作', key: 'action', width: 120,
-      render: (_: unknown, r: Vulnerability) => <a onClick={() => handlePreviewVuln(r.id)}>预览</a>
+      title: '操作', key: 'action', width: 140,
+      render: (_: unknown, r: Vulnerability) => (
+        <Button
+          theme="borderless"
+          icon={<IconEyeOpened />}
+          size="small"
+          onClick={() => handlePreviewVuln(r.id)}
+        >
+          查看详情
+        </Button>
+      )
     },
   ], []);
 
