@@ -3,8 +3,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import type { Vulnerability, VulnTimeline } from '@/lib/api';
 import { vulnApi } from '@/lib/api';
-import { Modal, Button, Tag, Typography, Spin } from '@douyinfe/semi-ui';
+import { Modal, Button, Tag, Typography } from '@douyinfe/semi-ui';
 import MarkdownViewer from './MarkdownViewer';
+import VulnTimelineViewer from './VulnTimelineViewer';
 
 const { Title, Text } = Typography;
 
@@ -14,27 +15,47 @@ interface VulnDetailModalProps {
   vuln: Vulnerability | null;
 }
 
-const timelineColorMap: Record<string, string> = {
-  created: '#1890ff',
-  assigned: '#fa8c16',
-  fixing: '#52c41a',
-  fixed: '#13c2c2',
-  retesting: '#722ed1',
-  completed: '#52c41a',
-  ignored: '#8c8c8c',
-  rejected: '#f5222d',
+const statusColorMap: Record<string, string> = {
+  pending: 'orange',
+  confirmed: 'red',
+  fixing: 'blue',
+  fixed: 'green',
+  retesting: 'purple',
+  completed: 'green',
+  ignored: 'grey',
+  rejected: 'pink',
 };
 
-const timelineActionLabelMap: Record<string, string> = {
-  created: '创建',
-  assigned: '分配',
-  fixing: '修复中',
-  fixed: '已修复',
-  retesting: '复测中',
-  completed: '已完成',
-  ignored: '已忽略',
-  rejected: '驳回',
+const severityColorMap: Record<string, string> = {
+  critical: 'red',
+  high: 'orange',
+  medium: 'yellow',
+  low: 'blue',
+  info: 'grey',
 };
+
+function formatDate(value?: string): string {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '-';
+  }
+  return date.toLocaleDateString('zh-CN');
+}
+
+function formatDeadlineRemaining(value?: string): string {
+  if (!value) return '';
+  const now = new Date();
+  const deadline = new Date(value);
+  if (Number.isNaN(deadline.getTime())) {
+    return '';
+  }
+
+  const days = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  if (days > 0) return `${days}天后`;
+  if (days === 0) return '今天到期';
+  return `已逾期${Math.abs(days)}天`;
+}
 
 export default function VulnDetailModal({ visible, onCancel, vuln }: VulnDetailModalProps) {
   const [timelineLoading, setTimelineLoading] = useState(false);
@@ -49,32 +70,39 @@ export default function VulnDetailModal({ visible, onCancel, vuln }: VulnDetailM
 
   useEffect(() => {
     if (!visible || !vuln?.id) {
+      setTimeline([]);
       return;
     }
+
+    let cancelled = false;
 
     const loadTimeline = async () => {
       setTimelineLoading(true);
       try {
         const res = await vulnApi.getVulnTimeline(vuln.id);
-        if (res.code === 200) {
+        if (!cancelled && res.code === 200) {
           setTimeline(res.data || []);
-        } else {
-          setTimeline([]);
         }
       } catch {
-        setTimeline([]);
+        if (!cancelled) {
+          setTimeline([]);
+        }
       } finally {
-        setTimelineLoading(false);
+        if (!cancelled) {
+          setTimelineLoading(false);
+        }
       }
     };
 
     loadTimeline();
+
+    return () => {
+      cancelled = true;
+    };
   }, [visible, vuln?.id]);
 
-  const fixDeadlineText = useMemo(() => {
-    if (!vuln?.fix_deadline) return '-';
-    return new Date(vuln.fix_deadline).toLocaleDateString('zh-CN');
-  }, [vuln?.fix_deadline]);
+  const fixDeadlineText = useMemo(() => formatDate(vuln?.fix_deadline), [vuln?.fix_deadline]);
+  const fixDeadlineRemaining = useMemo(() => formatDeadlineRemaining(vuln?.fix_deadline), [vuln?.fix_deadline]);
 
   if (!vuln) return null;
 
@@ -105,7 +133,7 @@ export default function VulnDetailModal({ visible, onCancel, vuln }: VulnDetailM
               </div>
               <div style={{ padding: '12px', backgroundColor: 'var(--semi-color-fill-0)', borderRadius: '6px' }}>
                 <Text type="secondary" size="small">严重程度：</Text>
-                <div style={{ marginTop: '6px' }}><Tag color="red" size="large">{vuln.severity || '-'}</Tag></div>
+                <div style={{ marginTop: '6px' }}><Tag color={severityColorMap[vuln.severity] || 'grey'} size="large">{vuln.severity || '-'}</Tag></div>
               </div>
               {vuln.cve_id && (
                 <div style={{ padding: '12px', backgroundColor: 'var(--semi-color-fill-0)', borderRadius: '6px' }}>
@@ -117,13 +145,22 @@ export default function VulnDetailModal({ visible, onCancel, vuln }: VulnDetailM
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
               <div style={{ padding: '12px', backgroundColor: 'var(--semi-color-fill-0)', borderRadius: '6px' }}>
                 <Text type="secondary" size="small">当前状态：</Text>
-                <div style={{ marginTop: '6px' }}><Tag color="blue" size="large">{vuln.status || '-'}</Tag></div>
+                <div style={{ marginTop: '6px' }}><Tag color={statusColorMap[vuln.status] || 'grey'} size="large">{vuln.status || '-'}</Tag></div>
               </div>
               <div style={{ padding: '12px', backgroundColor: 'var(--semi-color-fill-0)', borderRadius: '6px' }}>
                 <Text type="secondary" size="small">修复期限：</Text>
-                <div style={{ marginTop: '4px' }}><Text strong>{fixDeadlineText}</Text></div>
+                <div style={{ marginTop: '4px' }}>
+                  <Text strong>{fixDeadlineText}</Text>
+                  {fixDeadlineRemaining && <Text type="secondary" size="small" style={{ marginLeft: '8px' }}>{fixDeadlineRemaining}</Text>}
+                </div>
               </div>
             </div>
+            {vuln.vuln_url && (
+              <div style={{ padding: '12px', backgroundColor: 'var(--semi-color-fill-0)', borderRadius: '6px' }}>
+                <Text type="secondary" size="small">漏洞地址：</Text>
+                <div style={{ marginTop: '4px' }}><Text>{vuln.vuln_url}</Text></div>
+              </div>
+            )}
           </div>
 
           <div style={{ marginBottom: '24px' }}>
@@ -144,34 +181,12 @@ export default function VulnDetailModal({ visible, onCancel, vuln }: VulnDetailM
             </div>
           </div>
 
-          <div>
-            <Title heading={5} style={{ marginBottom: '16px', color: 'var(--semi-color-primary)' }}>处理时间线</Title>
-            <div style={{ padding: '12px', border: '1px solid var(--semi-color-border)', borderRadius: '6px', minHeight: '120px' }}>
-              {timelineLoading ? (
-                <Spin spinning />
-              ) : timeline.length === 0 ? (
-                <Text type="tertiary">暂无时间线</Text>
-              ) : (
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', overflowX: 'auto', paddingBottom: '8px' }}>
-                  {timeline.map((item, index) => {
-                    const color = timelineColorMap[item.action] || '#1890ff';
-                    const label = timelineActionLabelMap[item.action] || item.action;
-                    return (
-                      <React.Fragment key={item.id}>
-                        <div style={{ minWidth: '100px', padding: '8px', borderRadius: '6px', border: `2px solid ${color}`, textAlign: 'center' }}>
-                          <Text strong style={{ color }}>{label}</Text>
-                          <div><Text size="small" type="tertiary">{new Date(item.created_at).toLocaleDateString('zh-CN')}</Text></div>
-                          <div><Text size="small" type="tertiary">{new Date(item.created_at).toLocaleTimeString('zh-CN')}</Text></div>
-                          <div><Text size="small" type="secondary">{item.user?.real_name || item.user?.username || '-'}</Text></div>
-                        </div>
-                        {index < timeline.length - 1 && <div style={{ width: '16px', height: '2px', background: '#d9d9d9', marginTop: '32px' }} />}
-                      </React.Fragment>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
+          <VulnTimelineViewer
+            timeline={timeline}
+            loading={timelineLoading}
+            maxWidth={468}
+            showDragHint
+          />
         </div>
 
         <div style={{ flex: 1, paddingLeft: '32px', overflowY: 'auto', maxHeight: '800px' }}>
