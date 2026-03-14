@@ -308,26 +308,24 @@ func UploadVulnImage(c *gin.Context) {
 		return
 	}
 
-	// 构造基础URL - 固定指向后端服务器
-	scheme := "http"
-	if c.Request.TLS != nil {
-		scheme = "https"
-	}
-
-	// 固定使用后端地址，避免前端端口影响
-	host := c.Request.Host
-	if strings.Contains(host, ":3000") || strings.Contains(host, "localhost") {
-		// 如果是从前端访问，固定使用后端地址
-		host = "127.0.0.1"
-		if scheme == "https" {
-			host = "127.0.0.1:443" // 如果需要HTTPS
-		}
-	}
-
-	baseURL := fmt.Sprintf("%s://%s", scheme, host)
-
 	// 调用用户服务上传图片
-	imageURL, err := userService.UploadVulnImage(userID.(uint), file, baseURL)
+	target := c.PostForm("target")
+	if target != "" && target != "logo" && target != "login_background" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 400,
+			"msg":  "不支持的上传目标",
+		})
+		return
+	}
+	if (target == "logo" || target == "login_background") && c.GetString("role_code") != "super_admin" {
+		c.JSON(http.StatusForbidden, gin.H{
+			"code": 403,
+			"msg":  "仅超级管理员可上传系统品牌图片",
+		})
+		return
+	}
+
+	imageURL, err := userService.UploadVulnImage(userID.(uint), file, "", target)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 400,

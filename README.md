@@ -75,6 +75,14 @@ docker compose up -d --build
 docker compose ps
 ```
 
+> Windows 常见报错排查：
+> - `the attribute version is obsolete`：Compose V2 已废弃 `version` 字段，可忽略；本仓库已移除该字段。
+> - `open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified`：这是 **Docker Desktop 引擎未启动**，不是项目配置错误。请先启动 Docker Desktop，并确认状态为 Running，再执行 `docker compose up -d --build`。
+> - 若仍失败，可在 PowerShell 执行：
+>   `docker version`（确认 Client/Server 都有输出）
+>   `docker context ls`（确认当前 context 可用，通常是 `desktop-linux`）
+>   `docker compose ls`（确认 compose 子命令可正常连接引擎）
+
 默认访问地址：
 
 - 前端：`http://127.0.0.1:3000`

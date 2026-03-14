@@ -389,7 +389,7 @@ func (s *AssetService) GetAssetList(req *AssetListRequest) (*AssetListResponse, 
 	// 如果是查询特定项目的资产，需要先检查用户是否有项目权限
 	if req.ProjectID != nil {
 		// 检查用户是否有项目权限（管理员、项目负责人和项目成员都可以查看）
-		if req.CurrentUserRole != "super_admin" {
+		if req.CurrentUserRole != "super_admin" && req.CurrentUserRole != "leader" {
 			hasAccess := false
 
 			// 检查是否是项目负责人
@@ -429,8 +429,8 @@ func (s *AssetService) GetAssetList(req *AssetListRequest) (*AssetListResponse, 
 		case "dev_engineer":
 			// 研发工程师能看到自己参与项目的资产，以及自己负责的项目的资产
 			query = query.Where("project_id IN (SELECT id FROM projects WHERE owner_id = ?) OR project_id IN (SELECT project_id FROM project_members WHERE user_id = ?)", req.CurrentUserID, req.CurrentUserID)
-		case "super_admin":
-			// 超级管理员能看到所有资产，不添加额外限制
+		case "super_admin", "leader":
+			// 超级管理员和领导能看到所有资产，不添加额外限制
 		default:
 			// 其他角色不能查看资产列表
 			return &AssetListResponse{
@@ -630,8 +630,8 @@ func (s *AssetService) ExportAssetsToExcel(assetIDs []uint, projectID uint, user
 	case "dev_engineer":
 		// 研发工程师只能导出自己参与项目的资产，或者自己负责的项目的资产
 		query = query.Where("project_id IN (SELECT id FROM projects WHERE owner_id = ?) OR project_id IN (SELECT project_id FROM project_members WHERE user_id = ?)", userID, userID)
-	case "super_admin":
-		// 超级管理员能导出所有资产，不添加额外限制
+	case "super_admin", "leader":
+		// 超级管理员和领导能导出所有资产，不添加额外限制
 	default:
 		return nil, errors.New("无权限导出资产")
 	}
