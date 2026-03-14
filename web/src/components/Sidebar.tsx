@@ -94,6 +94,11 @@ export default function Sidebar({ selectedKey = 'home', onSelect }: SidebarProps
           icon: <IconSetting />
         },
         {
+          itemKey: 'knowledge',
+          text: '知识库',
+          icon: <IconSetting />
+        },
+        {
           itemKey: 'settings',
           text: '系统设置',
           icon: <IconSetting />
