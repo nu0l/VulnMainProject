@@ -225,6 +225,7 @@ func InitDefaultData() error {
 	leaderPermissions := []string{
 		"dashboard:view",
 		"project:view",
+		"user:view",
 		"vuln:view",
 		"asset:view",
 		"knowledge:view",
