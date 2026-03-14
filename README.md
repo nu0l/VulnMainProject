@@ -142,6 +142,7 @@ export DATASOURCE_DATABASE=vulnmain
 export DATASOURCE_USERNAME=root
 export DATASOURCE_PASSWORD=your_password
 export SERVER_PORT=5000
+export AUTH_JWT_SECRET=please_change_me_to_a_long_random_secret
 ```
 
 ### 5. 🌐 启动前端服务
