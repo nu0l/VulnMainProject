@@ -58,6 +58,9 @@ func InitRouter(r *gin.Engine) *gin.Engine {
 
 	// 专门为周报PDF文件提供静态访问
 	r.Static("/weekly-reports", filepath.Join(uploadRoot, "weekly"))
+	// 系统品牌图片根路径访问（用于登录页/logo回退）
+	r.StaticFile("/logo.png", filepath.Join(uploadRoot, "vuln-images", "logo.png"))
+	r.StaticFile("/login.jpg", filepath.Join(uploadRoot, "vuln-images", "login.jpg"))
 
 	// 公开API组 - 不需要JWT认证的接口
 	// 这些接口可以匿名访问，主要用于用户登录和令牌刷新
@@ -144,6 +147,7 @@ func InitRouter(r *gin.Engine) *gin.Engine {
 			vulnViewAPI.GET("/:id", api.GetVuln)                                // 获取漏洞详情
 			vulnViewAPI.GET("/:id/timeline", api.GetVulnTimeline)               // 获取漏洞时间线
 			vulnViewAPI.GET("/:id/recommend-fixes", api.RecommendFixStrategies) // 推荐历史修复策略
+			vulnViewAPI.POST("/replay", api.ReplayVulnRequest)                  // 重放漏洞请求数据包
 			vulnViewAPI.GET("/compliance/export", api.ExportComplianceReport)   // 导出合规模板报告
 			vulnViewAPI.POST("/export", api.ExportVulns)                        // 批量导出漏洞
 			vulnViewAPI.GET("/import/template", api.DownloadVulnTemplate)       // 下载漏洞导入模板
@@ -235,6 +239,7 @@ func InitRouter(r *gin.Engine) *gin.Engine {
 		{
 			knowledgeViewAPI.GET("", api.GetKnowledgeList)
 			knowledgeViewAPI.GET("/recommend", api.RecommendKnowledge)
+			knowledgeViewAPI.GET("/alerts", api.GetKnowledgeAlerts)
 		}
 
 		knowledgeEditAPI := knowledgeAPI.Group("")

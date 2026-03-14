@@ -1384,6 +1384,7 @@ export default function DashboardPage() {
 
     switch (user.role_id) {
       case 1: // 超级管理员
+      case 5: // 领导（只读管理视角）
         return renderSuperAdminDashboard();
       case 2: // 安全工程师
         return renderSecurityEngineerDashboard();

@@ -1,15 +1,12 @@
 'use client';
 
-import { Nav, Button, Modal } from '@douyinfe/semi-ui';
+import { Nav } from '@douyinfe/semi-ui';
 import {
   IconHome,
   IconFolderOpen,
-  IconUserGroup,
   IconSetting,
-  IconExit
 } from '@douyinfe/semi-icons';
 import { useEffect, useState } from 'react';
-import { authUtils } from '@/lib/api';
 
 interface User {
   id: number;
@@ -46,7 +43,7 @@ export default function Sidebar({ selectedKey = 'home', onSelect }: SidebarProps
 
   // 根据用户角色获取导航项
   const getNavigationItems = () => {
-    const baseItems = [
+    const homeAndProject = [
       {
         itemKey: 'home',
         text: '首页',
@@ -59,18 +56,46 @@ export default function Sidebar({ selectedKey = 'home', onSelect }: SidebarProps
       }
     ];
 
-    // 超级管理员(role_id=1)显示所有选项
+    const readOnlyMgmtItems = [
+      {
+        itemKey: 'assets',
+        text: '资产面板',
+        icon: <IconSetting />
+      },
+      {
+        itemKey: 'knowledge',
+        text: '知识库',
+        icon: <IconSetting />
+      },
+      {
+        itemKey: 'repeater',
+        text: '漏洞一键检测',
+        icon: <IconSetting />
+      }
+    ];
+
+    // 超级管理员显示全部菜单
     if (user?.role_id === 1) {
       return [
-        ...baseItems,
-        {
-          itemKey: 'users',
-          text: '用户管理',
-          icon: <IconUserGroup />
-        },
+        ...homeAndProject,
         {
           itemKey: 'assets',
           text: '资产面板',
+          icon: <IconSetting />
+        },
+        {
+          itemKey: 'users',
+          text: '用户管理',
+          icon: <IconSetting />
+        },
+        {
+          itemKey: 'knowledge',
+          text: '知识库',
+          icon: <IconSetting />
+        },
+        {
+          itemKey: 'repeater',
+          text: '漏洞一键检测',
           icon: <IconSetting />
         },
         {
@@ -81,8 +106,34 @@ export default function Sidebar({ selectedKey = 'home', onSelect }: SidebarProps
       ];
     }
 
-    // 其他角色只显示首页和项目管理
-    return baseItems;
+    // 领导角色：只读管理视角（不含用户管理）
+    if (user?.role_id === 5) {
+      return [...homeAndProject, ...readOnlyMgmtItems];
+    }
+
+    // 安全/研发工程师可访问资产、知识库与检测模块
+    if (user?.role_id === 2 || user?.role_id === 3) {
+      return [
+        ...homeAndProject,
+        {
+          itemKey: 'assets',
+          text: '资产面板',
+          icon: <IconSetting />
+        },
+        {
+          itemKey: 'knowledge',
+          text: '知识库',
+          icon: <IconSetting />
+        },
+        {
+          itemKey: 'repeater',
+          text: '漏洞一键检测',
+          icon: <IconSetting />
+        }
+      ];
+    }
+
+    return homeAndProject;
   };
 
   const handleSelect = (data: any) => {
@@ -151,6 +202,8 @@ function getRoleDisplayName(roleId: number): string {
       return '研发工程师';
     case 4:
       return '普通用户';
+    case 5:
+      return '领导';
     default:
       return '未知角色';
   }
