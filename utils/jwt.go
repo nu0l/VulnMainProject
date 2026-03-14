@@ -15,7 +15,7 @@ import (
 	Init "vulnmain/Init" // 导入初始化包，获取数据库连接
 	"vulnmain/models"    // 导入模型包，使用系统配置模型
 
-	"github.com/dgrijalva/jwt-go" // 导入JWT处理包
+	"github.com/golang-jwt/jwt/v4" // 导入JWT处理包
 )
 
 // Claims结构体定义JWT声明信息
@@ -61,8 +61,7 @@ func resolveJWTSecret() string {
 	// 3) 最后回退到进程级随机密钥（重启会失效），避免固定弱默认值
 	secret, err := generateRandomJWTSecret()
 	if err != nil {
-		log.Printf("[WARN] failed to generate random JWT secret: %v; fallback to timestamp-based secret", err)
-		return strconv.FormatInt(time.Now().UnixNano(), 10)
+		log.Panicf("[FATAL] auth.jwt.secret/AUTH_JWT_SECRET 未配置且随机密钥生成失败: %v", err)
 	}
 	log.Printf("[WARN] auth.jwt.secret/AUTH_JWT_SECRET 未配置，已使用进程级随机JWT密钥；服务重启后旧Token将失效")
 	return secret
