@@ -39,6 +39,14 @@ func CreateUser(c *gin.Context) {
 
 // GetUser 获取用户详情
 func GetUser(c *gin.Context) {
+
+	if c.GetString("role_code") != "super_admin" {
+		c.JSON(http.StatusForbidden, gin.H{
+			"code": 403,
+			"msg":  "仅超级管理员可访问用户管理",
+		})
+		return
+	}
 	userIDStr := c.Param("id")
 	userID, err := strconv.ParseUint(userIDStr, 10, 32)
 	if err != nil {
@@ -131,6 +139,14 @@ func DeleteUser(c *gin.Context) {
 
 // GetUserList 获取用户列表
 func GetUserList(c *gin.Context) {
+
+	if c.GetString("role_code") != "super_admin" {
+		c.JSON(http.StatusForbidden, gin.H{
+			"code": 403,
+			"msg":  "仅超级管理员可访问用户管理",
+		})
+		return
+	}
 	var req services.UserListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -294,7 +310,6 @@ func GetAllEngineers(c *gin.Context) {
 		"data": engineers,
 	})
 }
-
 
 // GetRoles 获取角色列表
 func GetRoles(c *gin.Context) {

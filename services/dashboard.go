@@ -82,7 +82,7 @@ func (s *DashboardService) GetDashboardData(userID uint, roleCode string) (*Dash
 	db := Init.GetDB()
 
 	switch roleCode {
-	case "super_admin":
+	case "super_admin", "leader":
 		return s.getSuperAdminDashboard(db)
 	case "security_engineer":
 		return s.getSecurityEngineerDashboard(db, userID)

@@ -1,18 +1,19 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Modal, Button, Title, Text, Tag } from '@douyinfe/semi-ui';
+import type { Vulnerability } from '@/lib/api';
+import { Modal, Button, Tag, Typography } from '@douyinfe/semi-ui';
 import MarkdownViewer from './MarkdownViewer';
+
+const { Title, Text } = Typography;
 
 interface VulnDetailModalProps {
   visible: boolean;
   onCancel: () => void;
-  vuln: any;
+  vuln: Vulnerability | null;
 }
 
 export default function VulnDetailModal({ visible, onCancel, vuln }: VulnDetailModalProps) {
-  if (!vuln) return null;
-
   // 控制页面滚动
   useEffect(() => {
     if (visible) {
@@ -30,6 +31,8 @@ export default function VulnDetailModal({ visible, onCancel, vuln }: VulnDetailM
     document.body.style.overflow = 'auto';
     onCancel();
   };
+
+  if (!vuln) return null;
 
   return (
     <Modal
