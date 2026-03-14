@@ -99,8 +99,8 @@ export default function Sidebar({ selectedKey = 'home', onSelect }: SidebarProps
           icon: <IconSetting />
         },
         {
-          itemKey: 'settings',
-          text: '系统设置',
+          itemKey: 'repeater',
+          text: '漏洞一键检测',
           icon: <IconSetting />
         }
       ];

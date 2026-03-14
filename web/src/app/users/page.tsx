@@ -93,7 +93,7 @@ export default function UsersPage() {
 
     // 延迟一小段时间确保组件完全挂载
     const timer = setTimeout(() => {
-      if (user && user.role_id !== 1) {
+      if (user && user.role_id !== 1 && user.role_id !== 5) {
         // 非管理员用户直接重定向
         window.location.href = '/dashboard';
         return;
@@ -103,7 +103,7 @@ export default function UsersPage() {
       setAuthChecked(true);
 
       // 如果是管理员，加载数据
-      if (user && user.role_id === 1) {
+      if (user && (user.role_id === 1 || user.role_id === 5)) {
         loadUsers();
         if (user.role_id === 1) {
           loadRoles();
